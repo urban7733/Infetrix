@@ -1,81 +1,110 @@
-# Infetrix
+<p align="center">
+  <img src="docs/assets/infetrix-banner.svg" alt="Infetrix banner" width="100%" />
+</p>
 
-**BYOK inference routing for people who care about cost, speed, and control.**
+<p align="center">
+  <strong>Bring Your Own Key inference routing for teams that care about cost, latency, and control.</strong>
+</p>
 
-Infetrix is a personal open-source project by a developer in Vienna.
-The idea is simple: you bring your own provider keys, Infetrix chooses the best provider for each request based on live routing signals, and you keep full control over infrastructure spend.
+<p align="center">
+  <a href="https://inferix-phi.vercel.app"><img alt="Live Demo" src="https://img.shields.io/badge/Live-Demo-0EA5E9?style=for-the-badge" /></a>
+  <img alt="Backend" src="https://img.shields.io/badge/Backend-Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" />
+  <img alt="Frontend" src="https://img.shields.io/badge/Frontend-Next.js-111827?style=for-the-badge&logo=nextdotjs&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-16A34A?style=for-the-badge" />
+</p>
 
-## Goal
+<p align="center">
+  <a href="#why-infetrix">Why</a> ·
+  <a href="#core-features">Features</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#run-local">Run Local</a> ·
+  <a href="#security-posture">Security</a> ·
+  <a href="#roadmap">Roadmap</a>
+</p>
 
-Infetrix aims to be the practical middleware between your app and GPU inference providers:
+## Why Infetrix
 
-- compare providers by `price`, `latency`, and `availability`
-- route each request using a clear policy (`cost`, `latency`, `balanced`)
-- keep keys user-owned (BYOK), not platform-owned
-- add a Mojo/MAX optimization stage to cut GPU time per request
+Most teams overpay for inference because routing is static and optimization is disconnected from provider choice.
 
-Target outcome: **materially lower inference cost without losing responsiveness**.
+Infetrix solves that with one control plane:
 
-## What Exists Today
+- user-owned provider credentials (BYOK)
+- policy-driven provider selection (`cost`, `latency`, `balanced`)
+- optimizer track (Mojo/MAX) to reduce GPU-seconds per request
+- transparent output showing why a provider was selected
 
-### Backend (Go)
+Built as an open-source personal project in Vienna with a practical goal:
+**make AI inference cheaper without making it slower.**
 
-- `GET /health`
-- `POST /v1/route` (route decision only)
-- `POST /v1/infer` (route + provider dispatch)
-- policy engine with weighted scoring
-- provider adapters implemented: `runpod`, `huggingface`
-- API key redaction in responses/logs via preview format
+## Core Features
 
-### Frontend (Next.js + TypeScript)
+### Current
 
-- single-page UI flow (input -> providers -> result)
-- route-only and infer modes
-- production deployment on Vercel
-- proxy API routes (`/api/route`, `/api/infer`) plus internal `/v1/*` handlers
+- Go API with endpoints:
+  - `GET /health`
+  - `POST /v1/route`
+  - `POST /v1/infer`
+- weighted provider ranking by price/latency/availability
+- provider adapters:
+  - `runpod`
+  - `huggingface`
+- Next.js + TypeScript UI with a direct 3-step workflow
+- Vercel deployment for frontend
 
-### Planned Providers
+### In Progress
 
-- RunPod
-- Vast.ai
-- Hugging Face Inference API
-- Modal
-- Lambda Labs
+- provider expansion: Vast.ai, Modal, Lambda Labs
+- Mojo/MAX optimization stage before dispatch
+- benchmark-driven cost and latency reporting
 
-## Repository Layout
+## Architecture
+
+```mermaid
+flowchart LR
+    U[Client App / UI] --> A[Infetrix API]
+    A --> R[Policy Router]
+    R --> P1[RunPod]
+    R --> P2[Hugging Face]
+    R --> P3[Vast / Modal / Lambda]
+
+    U --> O[Mojo/MAX Optimizer Track]
+    O --> A
+
+    A --> S[(Routing Scores + Decision Trace)]
+```
+
+## Project Layout
 
 ```text
 Infetrix/
 ├── cmd/infetrix/            # Go entrypoint
 ├── internal/
-│   ├── api/                 # HTTP handlers and request validation
+│   ├── api/                 # HTTP handlers + validation
 │   ├── config/              # Env-driven config
 │   ├── provider/            # Provider adapters
-│   ├── router/              # Ranking and policy engine
+│   ├── router/              # Ranking engine
 │   └── security/            # Redaction helpers
-├── frontend/                # Next.js + TypeScript app
-├── docs/                    # Architecture and optimization notes
+├── frontend/                # Next.js + TypeScript
+├── docs/                    # Architecture + optimization docs
 └── scripts/max/             # Mojo/MAX benchmark scripts
 ```
 
-## Quick Start
+## Run Local
 
-### 1. Run backend
-
-Requirements: Go 1.22+
+### Backend
 
 ```bash
 go run ./cmd/infetrix
 ```
 
-Optional env vars:
+Optional env:
 
 ```bash
 export INFETRIX_ADDR=":8080"
 export INFETRIX_DEFAULT_POLICY="balanced"
 ```
 
-### 2. Run frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -86,9 +115,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## API Example
-
-### Route-only
+## Example Request
 
 ```bash
 curl -s http://localhost:8080/v1/route \
@@ -118,66 +145,33 @@ curl -s http://localhost:8080/v1/route \
   }' | jq
 ```
 
-### Route + dispatch
+## Security Posture
 
-```bash
-curl -s http://localhost:8080/v1/infer \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "Say hello in one short line.",
-    "model": "llama-3.1-8b-instruct",
-    "policy": "balanced",
-    "max_tokens": 64,
-    "temperature": 0.3,
-    "providers": [
-      {
-        "name": "runpod",
-        "endpoint": "https://api.runpod.ai/v2/YOUR_ENDPOINT/runsync",
-        "api_key": "rp_demo_key_123",
-        "price_per_1k_tokens": 0.024,
-        "avg_latency_ms": 420,
-        "availability": 0.99
-      }
-    ]
-  }' | jq
-```
+- no hardcoded real provider keys in source
+- `.env*` and local secret files are gitignored
+- key exposure is reduced to preview format (`abc...12`)
+- infer dispatch validates provider endpoint host and protocol
+- API body size limits and HTTP server timeouts are enabled
 
-## Security Notes
+For production hardening, next items are auth, rate limits, and audited key storage.
 
-- No provider secret is hardcoded in application source.
-- `.env.local` and other local env files are ignored via `.gitignore`.
-- API keys are never returned in full; only redacted previews are exposed.
-- This is still an early-stage project. Before production hardening, add auth, rate limits, and stricter endpoint validation.
-
-## Mojo/MAX Optimization Track
+## Mojo/MAX Path
 
 Playbook: `docs/optimization/mojo-max-playbook.md`
 
-Run baseline:
-
 ```bash
 ./scripts/max/run_baseline.sh <model_path> artifacts/baseline.json
-```
-
-Run tuned:
-
-```bash
 ./scripts/max/run_tuned.sh <tuned_model_path> artifacts/tuned.json
-```
-
-Compare:
-
-```bash
 ./scripts/max/compare.py artifacts/baseline.json artifacts/tuned.json
 ```
 
-## Project Direction
+## Roadmap
 
-1. Add adapters for Vast.ai, Modal, and Lambda Labs.
-2. Add request auth + rate limits for public deployment.
-3. Add endpoint validation and abuse controls for BYOK dispatch.
-4. Integrate Mojo optimization before provider dispatch and publish cost/latency benchmarks.
+1. Add remaining provider adapters (Vast, Modal, Lambda).
+2. Integrate Mojo-based optimization before dispatch.
+3. Publish reproducible benchmark matrix (cost, TTFT, throughput).
+4. Add authenticated multi-project API mode.
 
----
+## License
 
-If you want to contribute, open an issue with a concrete use case or benchmark scenario.
+Licensed under the MIT License. See [LICENSE](LICENSE).

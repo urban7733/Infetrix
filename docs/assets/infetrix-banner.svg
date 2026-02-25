@@ -1,0 +1,59 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Infetrix Banner</title>
+  <desc id="desc">Infetrix BYOK inference router banner</desc>
+  <defs>
+    <linearGradient id="bg" x1="120" y1="40" x2="1460" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="262" y1="120" x2="1240" y2="395" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14B8A6"/>
+      <stop offset="0.5" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#22C55E"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1320 80) rotate(145) scale(620 270)">
+      <stop stop-color="#14B8A6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 455) rotate(-5) scale(700 220)">
+      <stop stop-color="#38BDF8" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="0" y="0" width="1600" height="520" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="45"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" rx="32" fill="url(#bg)"/>
+  <rect width="1600" height="520" rx="32" fill="url(#glowA)"/>
+  <rect width="1600" height="520" rx="32" fill="url(#glowB)"/>
+
+  <g opacity="0.25" filter="url(#soft)">
+    <circle cx="1348" cy="120" r="110" fill="#22D3EE"/>
+    <circle cx="1220" cy="380" r="80" fill="#4ADE80"/>
+    <circle cx="330" cy="415" r="100" fill="#38BDF8"/>
+  </g>
+
+  <rect x="120" y="94" width="120" height="120" rx="24" fill="#0F172A" stroke="url(#accent)" stroke-width="3"/>
+  <path d="M168 126H198V137H180V150H194V160H180V182H168V126Z" fill="url(#accent)"/>
+
+  <text x="278" y="168" fill="white" font-size="84" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif" font-weight="700" letter-spacing="0.5">Infetrix</text>
+  <text x="278" y="222" fill="#9CA3AF" font-size="30" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif" font-weight="500">BYOK Inference Router + Optimizer</text>
+
+  <rect x="278" y="278" width="925" height="56" rx="14" fill="#0F172A" stroke="#1F2937"/>
+  <text x="304" y="314" fill="#D1D5DB" font-size="24" font-family="Consolas, Menlo, Monaco, monospace">route(prompt) -> pick best provider -> run optimized inference</text>
+
+  <g opacity="0.9">
+    <rect x="278" y="366" width="188" height="46" rx="10" fill="#0F172A" stroke="#374151"/>
+    <text x="306" y="396" fill="#E5E7EB" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">Go Backend</text>
+
+    <rect x="486" y="366" width="220" height="46" rx="10" fill="#0F172A" stroke="#374151"/>
+    <text x="515" y="396" fill="#E5E7EB" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">Next.js Frontend</text>
+
+    <rect x="726" y="366" width="220" height="46" rx="10" fill="#0F172A" stroke="#374151"/>
+    <text x="758" y="396" fill="#E5E7EB" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">Mojo/MAX Path</text>
+
+    <rect x="966" y="366" width="220" height="46" rx="10" fill="#0F172A" stroke="#374151"/>
+    <text x="996" y="396" fill="#E5E7EB" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">BYOK Security</text>
+  </g>
+</svg>
