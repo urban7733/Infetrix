@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 220 38% 4%;
-    --foreground: 210 40% 96%;
-    --card: 220 26% 8%;
-    --card-foreground: 210 40% 96%;
-    --primary: 189 100% 64%;
-    --primary-foreground: 218 52% 8%;
-    --secondary: 220 16% 16%;
-    --secondary-foreground: 210 30% 91%;
-    --muted: 219 22% 13%;
-    --muted-foreground: 216 20% 66%;
-    --accent: 186 93% 56%;
-    --accent-foreground: 220 46% 8%;
-    --destructive: 349 89% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 28% 22%;
-    --input: 215 25% 20%;
-    --ring: 189 100% 64%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 96%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 63%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 92%;
+    --destructive: 0 0% 96%;
+    --destructive-foreground: 0 0% 8%;
+    --border: 0 0% 24%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 92%;
     --radius: 0.85rem;
   }
 
@@ -36,10 +36,10 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(circle at 18% 18%, rgba(0, 229, 255, 0.18), transparent 38%),
-      radial-gradient(circle at 78% 4%, rgba(103, 60, 255, 0.12), transparent 42%),
-      radial-gradient(circle at 50% 100%, rgba(17, 255, 189, 0.08), transparent 38%),
-      linear-gradient(145deg, #02050c 0%, #070b14 48%, #080d17 100%);
+      radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.08), transparent 34%),
+      radial-gradient(circle at 78% 4%, rgba(255, 255, 255, 0.05), transparent 42%),
+      radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.04), transparent 38%),
+      linear-gradient(145deg, #040404 0%, #090909 50%, #0d0d0d 100%);
   }
 }
 
@@ -68,7 +68,7 @@
     height: 24rem;
     left: -8rem;
     bottom: -8rem;
-    background: radial-gradient(circle, rgba(0, 214, 255, 0.85), rgba(0, 214, 255, 0.02));
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.01));
   }
 
   .orb-right {
@@ -76,7 +76,7 @@
     height: 28rem;
     right: -10rem;
     top: -10rem;
-    background: radial-gradient(circle, rgba(38, 255, 173, 0.65), rgba(38, 255, 173, 0.02));
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.01));
   }
 
   .glass {
@@ -86,8 +86,8 @@
 
   .hero-grid {
     background-image:
-      linear-gradient(rgba(140, 174, 255, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(140, 174, 255, 0.08) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
     background-size: 26px 26px;
     mask-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
   }
