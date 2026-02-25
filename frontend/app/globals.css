@@ -4,24 +4,20 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
+    --background: 0 0% 2%;
     --foreground: 0 0% 96%;
-    --card: 0 0% 8%;
+    --card: 0 0% 6%;
     --card-foreground: 0 0% 96%;
     --primary: 0 0% 96%;
-    --primary-foreground: 0 0% 8%;
-    --secondary: 0 0% 16%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 90%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 63%;
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 92%;
-    --destructive: 0 0% 96%;
-    --destructive-foreground: 0 0% 8%;
-    --border: 0 0% 24%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 62%;
+    --border: 0 0% 22%;
     --input: 0 0% 20%;
     --ring: 0 0% 92%;
-    --radius: 0.85rem;
+    --radius: 1rem;
   }
 
   * {
@@ -33,13 +29,17 @@
     @apply min-h-full;
   }
 
+  html {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.08), transparent 34%),
-      radial-gradient(circle at 78% 4%, rgba(255, 255, 255, 0.05), transparent 42%),
-      radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.04), transparent 38%),
-      linear-gradient(145deg, #040404 0%, #090909 50%, #0d0d0d 100%);
+    @apply bg-background text-foreground antialiased font-sans;
+    background:
+      radial-gradient(900px 380px at 50% -160px, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0)),
+      radial-gradient(600px 220px at 100% 0%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+      radial-gradient(500px 180px at 0% 100%, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
+      #000;
   }
 }
 
@@ -47,52 +47,62 @@
   .noise {
     position: fixed;
     inset: 0;
-    pointer-events: none;
     z-index: 0;
-    opacity: 0.06;
-    background-image: radial-gradient(#f4f8ff 0.6px, transparent 0.6px);
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: radial-gradient(white 0.45px, transparent 0.45px);
     background-size: 3px 3px;
   }
 
   .orb {
     position: fixed;
+    z-index: 0;
     pointer-events: none;
     border-radius: 999px;
-    filter: blur(88px);
-    opacity: 0.22;
-    z-index: 0;
+    filter: blur(90px);
+    opacity: 0.18;
   }
 
   .orb-left {
     width: 24rem;
     height: 24rem;
-    left: -8rem;
+    left: -9rem;
     bottom: -8rem;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.01));
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
   }
 
   .orb-right {
-    width: 28rem;
-    height: 28rem;
-    right: -10rem;
-    top: -10rem;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.01));
-  }
-
-  .glass {
-    @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 28px 50px rgba(0, 0, 0, 0.45);
+    width: 22rem;
+    height: 22rem;
+    right: -8rem;
+    top: -9rem;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0));
   }
 
   .hero-grid {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-    background-size: 26px 26px;
-    mask-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
+      linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 30px 30px;
+    mask-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.85), transparent 70%);
   }
 
-  .section-title {
-    @apply text-sm font-medium uppercase tracking-[0.14em] text-muted-foreground;
+  .glass {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+    backdrop-filter: blur(26px) saturate(135%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 22px 55px rgba(0, 0, 0, 0.55);
+  }
+
+  .section-label {
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400;
+  }
+
+  .divider-soft {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
   }
 }

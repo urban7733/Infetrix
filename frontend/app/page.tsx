@@ -98,6 +98,13 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+function statusLabel(status: RunStatus): string {
+  if (status === "loading") return "Running";
+  if (status === "success") return "Success";
+  if (status === "error") return "Failed";
+  return "Idle";
+}
+
 export default function Home() {
   const [workloadName, setWorkloadName] = useState("primary-router");
   const [model, setModel] = useState("llama-3.1-8b-instruct");
@@ -257,47 +264,72 @@ export default function Home() {
     setResponsePreview(JSON.stringify(data.provider_response ?? { note: "No provider response payload." }, null, 2));
   }
 
-  const statusLabel = runStatus === "loading" ? "Running" : runStatus === "success" ? "Success" : runStatus === "error" ? "Failed" : "Idle";
-
   return (
     <div className="relative min-h-screen overflow-x-hidden px-4 pb-10 pt-6 sm:px-6 lg:px-8">
       <div className="noise" />
       <div className="orb orb-left" />
       <div className="orb orb-right" />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <section className="glass hero-grid rounded-2xl p-6 sm:p-8">
-          <Badge variant="outline" className="mb-3 w-fit">Infetrix Workload Control</Badge>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">Run your model through us. Cheaper and faster.</h1>
-          <p className="mt-4 max-w-3xl text-sm text-muted-foreground sm:text-base">
-            Workload-first flow: define workload once, attach providers, set policy and constraints, then execute by
-            workload ID. Prompt is only an optional test input.
-          </p>
-        </section>
+      <div className="relative z-10 mx-auto w-full max-w-[1320px] space-y-6">
+        <header className="glass rounded-3xl p-5 sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Badge variant="outline">Infetrix</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">Workload-first</Badge>
+              <Badge variant="secondary">BYOK Router</Badge>
+            </div>
+          </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+          <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+            <div>
+              <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
+                Pure black control layer for cheaper and faster model execution.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm text-muted-foreground sm:text-base">
+                Create workload profiles once. Execute by workload ID. Routing policy and provider economics are handled
+                in one minimal interface.
+              </p>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/12 bg-black/35 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Workloads</p>
+                <p className="mt-1 text-xl font-semibold">{workloads.length}</p>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-black/35 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Providers</p>
+                <p className="mt-1 text-xl font-semibold">{activeProviders.length}</p>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-black/35 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Run State</p>
+                <p className="mt-1 text-xl font-semibold">{statusLabel(runStatus)}</p>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="grid gap-6 xl:grid-cols-[1.26fr_0.74fr]">
           <div className="space-y-6">
-            <Card className="glass">
+            <Card>
               <CardHeader>
-                <CardTitle>1. Define Workload</CardTitle>
-                <CardDescription>Create a reusable workload profile instead of entering prompts every time.</CardDescription>
+                <CardTitle>Workload Blueprint</CardTitle>
+                <CardDescription>
+                  Define model, routing objective, provider credentials, and runtime defaults.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-5" onSubmit={createWorkload}>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">Workload Name</p>
-                      <Input value={workloadName} onChange={(event) => setWorkloadName(event.target.value)} />
+                  <section className="rounded-2xl border border-white/12 bg-black/35 p-4">
+                    <p className="section-label">Identity</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input value={workloadName} onChange={(event) => setWorkloadName(event.target.value)} placeholder="Workload name" />
+                      <Input value={model} onChange={(event) => setModel(event.target.value)} placeholder="Model" />
                     </div>
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">Model</p>
-                      <Input value={model} onChange={(event) => setModel(event.target.value)} />
-                    </div>
-                  </div>
+                  </section>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">Mode</p>
+                  <section className="rounded-2xl border border-white/12 bg-black/35 p-4">
+                    <p className="section-label">Strategy</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <div className="grid grid-cols-2 gap-2">
                         <Button type="button" variant={mode === "infer" ? "default" : "outline"} onClick={() => setMode("infer")}>
                           <Cpu className="mr-2 h-4 w-4" />
@@ -308,10 +340,7 @@ export default function Home() {
                           Route
                         </Button>
                       </div>
-                    </div>
 
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">Policy</p>
                       <div className="grid grid-cols-3 gap-2">
                         {(["balanced", "cost", "latency"] as Policy[]).map((p) => (
                           <Button
@@ -326,22 +355,23 @@ export default function Home() {
                         ))}
                       </div>
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="rounded-xl border border-white/10 bg-black/35 p-4">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <section className="rounded-2xl border border-white/12 bg-black/35 p-4">
+                    <div className="mb-3 flex items-center gap-2">
                       <Server className="h-4 w-4" />
-                      Providers
+                      <p className="text-sm font-medium">Providers</p>
                     </div>
 
                     <div className="space-y-3">
                       {providers.map((provider) => (
-                        <div key={provider.id} className="rounded-lg border border-white/10 bg-black/35 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div key={provider.id} className="rounded-xl border border-white/12 bg-black/45 p-3">
+                          <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-sm font-medium">{provider.label}</p>
-                              <p className="text-xs text-muted-foreground">{provider.endpoint}</p>
+                              <p className="text-sm font-semibold">{provider.label}</p>
+                              <p className="text-xs text-zinc-500">{provider.endpoint}</p>
                             </div>
+
                             <Button
                               type="button"
                               variant={provider.enabled ? "secondary" : "outline"}
@@ -389,45 +419,19 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="rounded-xl border border-white/10 bg-black/35 p-4">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <section className="rounded-2xl border border-white/12 bg-black/35 p-4">
+                    <div className="mb-3 flex items-center gap-2">
                       <SlidersHorizontal className="h-4 w-4" />
-                      Constraints & Defaults
+                      <p className="text-sm font-medium">Constraints & Defaults</p>
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={maxTokens}
-                        onChange={(event) => setMaxTokens(Number(event.target.value))}
-                        placeholder="Max tokens"
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        value={temperature}
-                        onChange={(event) => setTemperature(Number(event.target.value))}
-                        placeholder="Temperature"
-                      />
-                      <Input
-                        type="number"
-                        step="0.001"
-                        value={budgetPer1K}
-                        onChange={(event) => setBudgetPer1K(Number(event.target.value))}
-                        placeholder="Budget cap $/1k"
-                      />
-                      <Input
-                        type="number"
-                        min="1"
-                        value={latencySLA}
-                        onChange={(event) => setLatencySLA(Number(event.target.value))}
-                        placeholder="Latency SLA ms"
-                      />
+                      <Input type="number" min="1" value={maxTokens} onChange={(event) => setMaxTokens(Number(event.target.value))} placeholder="Max tokens" />
+                      <Input type="number" min="0" max="2" step="0.1" value={temperature} onChange={(event) => setTemperature(Number(event.target.value))} placeholder="Temperature" />
+                      <Input type="number" step="0.001" value={budgetPer1K} onChange={(event) => setBudgetPer1K(Number(event.target.value))} placeholder="Budget cap $/1k" />
+                      <Input type="number" min="1" value={latencySLA} onChange={(event) => setLatencySLA(Number(event.target.value))} placeholder="Latency SLA ms" />
                     </div>
 
                     <Textarea
@@ -436,7 +440,7 @@ export default function Home() {
                       onChange={(event) => setSampleInput(event.target.value)}
                       placeholder="Optional default input for infer workloads"
                     />
-                  </div>
+                  </section>
 
                   <div className="flex flex-wrap gap-2">
                     <Button type="submit" size="lg">
@@ -451,14 +455,14 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            <Card className="glass">
+            <Card>
               <CardHeader>
-                <CardTitle>2. Saved Workloads</CardTitle>
-                <CardDescription>Select a workload ID and execute it repeatedly.</CardDescription>
+                <CardTitle>Saved Workloads</CardTitle>
+                <CardDescription>Reusable workload profiles with IDs for repeated execution.</CardDescription>
               </CardHeader>
               <CardContent>
                 {workloads.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No workloads yet.</p>
+                  <p className="text-sm text-zinc-500">No workloads yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {workloads.map((workload) => {
@@ -466,19 +470,15 @@ export default function Home() {
                       return (
                         <div
                           key={workload.id}
-                          className={`rounded-lg border p-3 ${selected ? "border-white/50 bg-white/10" : "border-white/10 bg-black/35"}`}
+                          className={`rounded-xl border p-3 ${selected ? "border-white/55 bg-white/12" : "border-white/12 bg-black/45"}`}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <button
-                              type="button"
-                              className="text-left"
-                              onClick={() => setSelectedWorkloadID(workload.id)}
-                            >
+                            <button type="button" className="text-left" onClick={() => setSelectedWorkloadID(workload.id)}>
                               <p className="text-sm font-semibold">{workload.name}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-zinc-500">
                                 {workload.model} · {workload.mode} · {workload.policy} · {workload.provider_count} providers
                               </p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">ID: {workload.id}</p>
+                              <p className="mt-1 text-[11px] text-zinc-500">ID: {workload.id}</p>
                             </button>
 
                             <Button type="button" size="icon" variant="ghost" onClick={() => void deleteWorkload(workload.id)}>
@@ -494,74 +494,86 @@ export default function Home() {
             </Card>
           </div>
 
-          <Card className="glass h-fit">
-            <CardHeader>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle>3. Execute Workload</CardTitle>
-                  <CardDescription>Optional test input. Routing stays workload-driven.</CardDescription>
-                </div>
-                <Badge variant="secondary">{statusLabel}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                value={testInput}
-                onChange={(event) => setTestInput(event.target.value)}
-                placeholder="Optional test input. If empty, workload sample input is used."
-              />
-
-              <Button size="lg" className="w-full" onClick={() => void runSelectedWorkload()} disabled={runStatus === "loading"}>
-                {runStatus === "loading" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                Run Selected Workload
-              </Button>
-
-              {runError ? <div className="rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-white">{runError}</div> : null}
-
-              <div className="rounded-xl border border-white/10 bg-black/35 p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Selected Provider</p>
-                {runResult ? (
-                  <>
-                    <p className="mt-2 text-lg font-semibold">{runResult.selected_provider.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Score: {runResult.selected_provider.total_score.toFixed(4)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Endpoint: {runResult.selected_provider.endpoint}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Key preview: {runResult.selected_provider.api_key_preview}</p>
-                  </>
-                ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">No run yet.</p>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-black/35 p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Ranking</p>
-                {runResult?.rankings?.length ? (
-                  <div className="mt-2 space-y-2">
-                    {runResult.rankings.map((item) => {
-                      const width = clamp(Math.round(item.total_score * 100), 0, 100);
-                      return (
-                        <div key={item.name}>
-                          <div className="mb-1 flex items-center justify-between text-xs">
-                            <span>{item.name}</span>
-                            <span className="text-muted-foreground">{item.total_score.toFixed(4)}</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-white/10">
-                            <div className="h-full rounded-full bg-white" style={{ width: `${width}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
+          <div className="xl:sticky xl:top-6 h-fit">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle>Execute</CardTitle>
+                    <CardDescription>Run selected workload with optional test input.</CardDescription>
                   </div>
-                ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">No ranking data yet.</p>
-                )}
-              </div>
+                  <Badge variant="secondary">{statusLabel(runStatus)}</Badge>
+                </div>
+              </CardHeader>
 
-              <div className="rounded-xl border border-white/10 bg-black/35 p-4">
-                <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Provider Response</p>
-                <pre className="mt-2 max-h-[24rem] overflow-auto rounded-md bg-black/55 p-3 text-xs text-slate-200">{responsePreview}</pre>
-              </div>
-            </CardContent>
-          </Card>
+              <CardContent className="space-y-4">
+                <div className="rounded-2xl border border-white/12 bg-black/45 p-3">
+                  <p className="section-label !mb-1">Selected Workload ID</p>
+                  <p className="truncate text-sm">{selectedWorkloadID || "none"}</p>
+                </div>
+
+                <Textarea
+                  value={testInput}
+                  onChange={(event) => setTestInput(event.target.value)}
+                  placeholder="Optional test input; falls back to workload sample input"
+                />
+
+                <Button size="lg" className="w-full" onClick={() => void runSelectedWorkload()} disabled={runStatus === "loading"}>
+                  {runStatus === "loading" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                  Run Selected Workload
+                </Button>
+
+                {runError ? <div className="rounded-xl border border-white/20 bg-white/10 p-3 text-sm text-white">{runError}</div> : null}
+
+                <div className="divider-soft" />
+
+                <section className="rounded-2xl border border-white/12 bg-black/45 p-4">
+                  <p className="section-label">Selected Provider</p>
+                  {runResult ? (
+                    <>
+                      <p className="text-lg font-semibold">{runResult.selected_provider.name}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Score: {runResult.selected_provider.total_score.toFixed(4)}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Endpoint: {runResult.selected_provider.endpoint}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Key preview: {runResult.selected_provider.api_key_preview}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-zinc-500">No run yet.</p>
+                  )}
+                </section>
+
+                <section className="rounded-2xl border border-white/12 bg-black/45 p-4">
+                  <p className="section-label">Ranking</p>
+                  {runResult?.rankings?.length ? (
+                    <div className="space-y-2">
+                      {runResult.rankings.map((item) => {
+                        const width = clamp(Math.round(item.total_score * 100), 0, 100);
+                        return (
+                          <div key={item.name}>
+                            <div className="mb-1 flex items-center justify-between text-xs">
+                              <span>{item.name}</span>
+                              <span className="text-zinc-500">{item.total_score.toFixed(4)}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-white/10">
+                              <div className="h-full rounded-full bg-white" style={{ width: `${width}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-500">No ranking data yet.</p>
+                  )}
+                </section>
+
+                <section className="rounded-2xl border border-white/12 bg-black/45 p-4">
+                  <p className="section-label">Provider Response</p>
+                  <pre className="max-h-[22rem] overflow-auto rounded-xl border border-white/10 bg-black/60 p-3 text-xs text-zinc-200">
+                    {responsePreview}
+                  </pre>
+                </section>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -1,11 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./lib/**/*.{ts,tsx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -28,14 +24,6 @@ module.exports = {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -43,10 +31,11 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(64, 246, 255, 0.18), 0 12px 38px rgba(0, 0, 0, 0.55)",
+        frosted: "0 0 0 1px rgba(255,255,255,0.08), 0 30px 60px rgba(0,0,0,0.55)",
+        innerline: "inset 0 1px 0 rgba(255,255,255,0.16)",
       },
       fontFamily: {
-        sans: ["Inter", "Segoe UI", "Arial", "sans-serif"],
+        sans: ["Manrope", "Avenir Next", "Segoe UI", "sans-serif"],
       },
     },
   },
