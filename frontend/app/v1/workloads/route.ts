@@ -8,24 +8,7 @@ import {
   validateDispatchEndpoint,
   validateProviderInput,
 } from "@/lib/infetrix";
-
-type WorkloadMode = "route" | "infer";
-
-type Workload = {
-  id: string;
-  name: string;
-  model: string;
-  mode: WorkloadMode;
-  policy: "cost" | "latency" | "balanced";
-  max_tokens: number;
-  temperature: number;
-  budget_per_1k?: number;
-  latency_sla_ms?: number;
-  sample_input?: string;
-  providers: ProviderRequest[];
-  created_at: string;
-  updated_at: string;
-};
+import { Workload, WorkloadMode, workloadStore } from "@/lib/workloads-store";
 
 type ExecuteResult = {
   request_id: string;
@@ -57,12 +40,6 @@ type DispatchResult = {
   status: number;
   body: unknown;
 };
-
-declare global {
-  var __INFETRIX_WORKLOADS__: Map<string, Workload> | undefined;
-}
-
-const workloadStore = globalThis.__INFETRIX_WORKLOADS__ ?? (globalThis.__INFETRIX_WORKLOADS__ = new Map<string, Workload>());
 
 function nowISO(): string {
   return new Date().toISOString();
@@ -209,7 +186,7 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
   const workloadID = String(raw.workload_id || "").trim();
   if (!workloadID) throw new Error("workload_id is required");
 
-  const workload = workloadStore.get(workloadID);
+  const workload = await workloadStore.get(workloadID);
   if (!workload) throw new Error("workload not found");
 
   const rankings = rankProviders(workload.policy, workload.providers);
@@ -268,9 +245,7 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
 }
 
 export async function GET() {
-  const workloads = [...workloadStore.values()]
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .map((workload) => workloadSummary(workload));
+  const workloads = (await workloadStore.list()).map((workload) => workloadSummary(workload));
 
   return NextResponse.json({
     workloads,
@@ -284,8 +259,7 @@ export async function POST(request: Request) {
     const action = String(body.action || "create").trim().toLowerCase();
 
     if (action === "create") {
-      const workload = buildCreatePayload(body);
-      workloadStore.set(workload.id, workload);
+      const workload = await workloadStore.create(buildCreatePayload(body));
       return NextResponse.json(
         {
           message: "workload created",
@@ -300,7 +274,7 @@ export async function POST(request: Request) {
       if (!workloadID) {
         return NextResponse.json({ error: "workload_id is required" }, { status: 400 });
       }
-      workloadStore.delete(workloadID);
+      await workloadStore.delete(workloadID);
       return NextResponse.json({ message: "workload deleted", workload_id: workloadID });
     }
 

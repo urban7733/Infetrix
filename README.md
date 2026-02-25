@@ -85,6 +85,9 @@ Infetrix/
 │   ├── router/              # Ranking engine
 │   └── security/            # Redaction helpers
 ├── frontend/                # Next.js + TypeScript
+│   ├── app/v1/workloads/    # Workload-first API (create/list/execute/delete)
+│   ├── db/schema.sql         # PostgreSQL schema
+│   └── db/pgvector.sql       # Optional pgvector migration
 ├── docs/                    # Architecture + optimization docs
 └── scripts/max/             # Mojo/MAX benchmark scripts
 ```
@@ -114,6 +117,11 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+Workload persistence:
+- Set `DATABASE_URL` in `frontend/.env.local` to enable PostgreSQL storage.
+- Without `DATABASE_URL`, workloads fall back to in-memory storage.
+- Optional pgvector setup: run `frontend/db/pgvector.sql` after `frontend/db/schema.sql`.
 
 ## Example Request
 
