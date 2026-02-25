@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/infetrix-banner.svg" alt="Infetrix banner" width="100%" />
+  <img src="docs/assets/infetrix-black-tech.svg" alt="Infetrix black-tech banner" width="100%" />
 </p>
 
 <p align="center">

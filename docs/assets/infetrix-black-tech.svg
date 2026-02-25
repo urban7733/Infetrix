@@ -1,0 +1,118 @@
+<svg width="1800" height="760" viewBox="0 0 1800 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Infetrix Black Tech Hero</title>
+  <desc id="desc">Futuristic black high-tech hero image for the Infetrix repository</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="120" y1="60" x2="1690" y2="680" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#020409"/>
+      <stop offset="0.6" stop-color="#060A12"/>
+      <stop offset="1" stop-color="#0A101A"/>
+    </linearGradient>
+
+    <radialGradient id="auraA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1500 120) rotate(140) scale(620 230)">
+      <stop stop-color="#00E5FF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#00E5FF" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="auraB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(280 620) rotate(-12) scale(760 250)">
+      <stop stop-color="#1AFFB2" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#1AFFB2" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="neon" x1="350" y1="200" x2="1430" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F0FF"/>
+      <stop offset="0.52" stop-color="#33C7FF"/>
+      <stop offset="1" stop-color="#1AFFB2"/>
+    </linearGradient>
+
+    <pattern id="microGrid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" stroke="#16202E" stroke-width="1"/>
+    </pattern>
+
+    <pattern id="hex" x="0" y="0" width="42" height="36" patternUnits="userSpaceOnUse">
+      <path d="M10.5 1L31.5 1L42 18L31.5 35L10.5 35L0 18L10.5 1Z" stroke="#173145" stroke-opacity="0.55"/>
+    </pattern>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="hardGlow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.2" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+      <feMerge>
+        <feMergeNode in="g"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1800" height="760" rx="34" fill="url(#bg)"/>
+  <rect width="1800" height="760" rx="34" fill="url(#auraA)"/>
+  <rect width="1800" height="760" rx="34" fill="url(#auraB)"/>
+
+  <g opacity="0.8">
+    <rect x="0" y="0" width="1800" height="760" fill="url(#microGrid)"/>
+    <rect x="0" y="0" width="1800" height="760" fill="url(#hex)" opacity="0.26"/>
+  </g>
+
+  <g opacity="0.42" filter="url(#softGlow)">
+    <path d="M-20 615C260 515 510 612 760 560C1010 508 1260 380 1830 450" stroke="#00D4FF" stroke-width="2"/>
+    <path d="M-40 665C240 565 490 662 740 610C1010 555 1320 430 1860 505" stroke="#1AFFB2" stroke-width="2"/>
+  </g>
+
+  <g filter="url(#hardGlow)">
+    <path d="M115 600L415 458L672 498L978 338L1220 386L1512 218" stroke="url(#neon)" stroke-width="3" fill="none"/>
+    <path d="M180 640L480 500L744 548L1035 388L1295 424L1608 258" stroke="#1FD7FF" stroke-opacity="0.75" stroke-width="1.5" fill="none"/>
+  </g>
+
+  <g>
+    <circle cx="415" cy="458" r="6" fill="#00F0FF"/>
+    <circle cx="672" cy="498" r="6" fill="#00F0FF"/>
+    <circle cx="978" cy="338" r="6" fill="#00F0FF"/>
+    <circle cx="1220" cy="386" r="6" fill="#1AFFB2"/>
+    <circle cx="1512" cy="218" r="7" fill="#1AFFB2"/>
+  </g>
+
+  <g>
+    <rect x="126" y="118" width="124" height="124" rx="22" fill="#050B15" stroke="url(#neon)" stroke-width="2.6"/>
+    <path d="M175 150H205V161H187V174H201V184H187V208H175V150Z" fill="url(#neon)"/>
+  </g>
+
+  <text x="286" y="193" fill="#F5F9FF" font-size="92" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif" font-weight="700" letter-spacing="0.4">Infetrix</text>
+  <text x="289" y="252" fill="#95A3B7" font-size="30" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif" font-weight="500">Black-Tech BYOK Inference Router + Optimizer</text>
+
+  <g>
+    <rect x="289" y="300" width="1060" height="58" rx="12" fill="#07101C" stroke="#1A2B42"/>
+    <text x="316" y="337" fill="#D9E6F5" font-size="24" font-family="Consolas, Menlo, Monaco, monospace">route(prompt) -> rank providers -> optimize -> dispatch</text>
+  </g>
+
+  <g>
+    <rect x="289" y="396" width="198" height="50" rx="10" fill="#081220" stroke="#24405D"/>
+    <text x="321" y="428" fill="#E4EEFA" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">Go Core</text>
+
+    <rect x="506" y="396" width="248" height="50" rx="10" fill="#081220" stroke="#24405D"/>
+    <text x="536" y="428" fill="#E4EEFA" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">Next.js Interface</text>
+
+    <rect x="774" y="396" width="252" height="50" rx="10" fill="#081220" stroke="#24405D"/>
+    <text x="806" y="428" fill="#E4EEFA" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">Mojo/MAX Track</text>
+
+    <rect x="1045" y="396" width="230" height="50" rx="10" fill="#081220" stroke="#24405D"/>
+    <text x="1078" y="428" fill="#E4EEFA" font-size="20" font-family="Segoe UI, Ubuntu, Helvetica, Arial, sans-serif">BYOK Secure</text>
+  </g>
+
+  <g opacity="0.7">
+    <rect x="1348" y="302" width="308" height="196" rx="16" fill="#070E19" stroke="#213246"/>
+    <text x="1374" y="337" fill="#90A7C3" font-size="17" font-family="Consolas, Menlo, Monaco, monospace">Provider Matrix</text>
+    <text x="1374" y="368" fill="#C9D9EC" font-size="15" font-family="Consolas, Menlo, Monaco, monospace">runpod      $0.024   420ms</text>
+    <text x="1374" y="394" fill="#C9D9EC" font-size="15" font-family="Consolas, Menlo, Monaco, monospace">huggingface $0.030   380ms</text>
+    <text x="1374" y="420" fill="#C9D9EC" font-size="15" font-family="Consolas, Menlo, Monaco, monospace">vast        $0.018   640ms</text>
+    <text x="1374" y="446" fill="#8CE7D0" font-size="15" font-family="Consolas, Menlo, Monaco, monospace">selected -> runpod (balanced)</text>
+  </g>
+
+  <rect x="1" y="1" width="1798" height="758" rx="33" stroke="#192738"/>
+</svg>
