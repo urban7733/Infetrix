@@ -1,0 +1,32 @@
+.DS_Store
+
+# Secrets and local env files
+.env
+.env.*
+!.env.example
+!.env*.example
+
+# Python / Mojo
+.venv/
+__pycache__/
+
+# Go outputs
+bin/
+dist/
+coverage.out
+
+# Frontend / Next.js / Vercel
+node_modules/
+.next/
+out/
+.vercel/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+frontend/.env.local
+frontend/.env*.local
+frontend/tsconfig.tsbuildinfo
+
+# Local benchmark artifacts
+artifacts/

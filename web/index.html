@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Infetrix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-a"></div>
+    <div class="bg-orb bg-orb-b"></div>
+    <div class="grain"></div>
+
+    <header class="topbar reveal">
+      <div class="logo-wrap">
+        <div class="logo-mark">IFX</div>
+        <div>
+          <p class="logo-title">Infetrix</p>
+          <p class="logo-sub">BYOK Inference Router</p>
+        </div>
+      </div>
+      <span class="top-pill">Open Source / Personal Project</span>
+    </header>
+
+    <main class="shell">
+      <section class="hero reveal delay-1">
+        <p class="eyebrow">Simple workflow. Serious performance.</p>
+        <h1>Route once. Pay less. Stay fast.</h1>
+        <p class="hero-copy">
+          Enter prompt + providers, choose policy, run. Infetrix decides who is
+          cheapest and fastest right now.
+        </p>
+      </section>
+
+      <section class="workspace reveal delay-2">
+        <section class="panel panel-form">
+          <form id="infer-form">
+            <div class="step-head">
+              <span class="step-index">01</span>
+              <div>
+                <h2>Input</h2>
+                <p>Prompt, model, and routing strategy.</p>
+              </div>
+            </div>
+
+            <label>Prompt</label>
+            <textarea id="prompt" rows="5" placeholder="Summarize this text..."></textarea>
+
+            <div class="row two">
+              <div>
+                <label>Model</label>
+                <input id="model" value="llama-3.1-8b-instruct" />
+              </div>
+              <div>
+                <label>Policy</label>
+                <select id="policy">
+                  <option value="balanced">balanced</option>
+                  <option value="cost">cost</option>
+                  <option value="latency">latency</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Mode</label>
+                <select id="mode">
+                  <option value="infer">infer (route + dispatch)</option>
+                  <option value="route">route only</option>
+                </select>
+              </div>
+              <div class="hint-box">
+                <p class="hint-title">Workflow</p>
+                <p class="hint-copy">1 click from input to ranked result.</p>
+              </div>
+            </div>
+
+            <div class="step-head compact">
+              <span class="step-index">02</span>
+              <div>
+                <h2>Providers</h2>
+                <p>Add as many candidates as you want.</p>
+              </div>
+            </div>
+
+            <div id="provider-list" class="provider-list"></div>
+            <button class="btn btn-ghost" type="button" id="add-provider">Add Provider</button>
+
+            <div class="row two" id="infer-only-fields">
+              <div>
+                <label>Max Tokens</label>
+                <input id="max-tokens" type="number" min="1" value="128" />
+              </div>
+              <div>
+                <label>Temperature</label>
+                <input id="temperature" type="number" min="0" max="2" step="0.1" value="0.7" />
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn btn-primary" type="submit" id="run-btn">Run Infetrix</button>
+              <button class="btn btn-ghost" type="button" id="demo-btn">Load Demo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel panel-results">
+          <div class="step-head">
+            <span class="step-index">03</span>
+            <div>
+              <h2>Result</h2>
+              <p>Selected provider, ranking, and response.</p>
+            </div>
+          </div>
+
+          <div class="status-line">
+            <span id="status-pill" class="status-pill idle">Idle</span>
+          </div>
+
+          <article class="result-card" id="selected-card">
+            <p class="result-title">Selected Provider</p>
+            <p class="result-empty">No run yet.</p>
+          </article>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Total</th>
+                  <th>Cost</th>
+                  <th>Latency</th>
+                  <th>Avail</th>
+                </tr>
+              </thead>
+              <tbody id="rankings-body">
+                <tr>
+                  <td colspan="5" class="muted">No ranking data yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="result-title">Provider Response</p>
+          <pre id="provider-response" class="response-box">No response yet.</pre>
+
+          <pre id="error-box" class="error-box hidden"></pre>
+        </section>
+      </section>
+    </main>
+
+    <template id="provider-template">
+      <div class="provider-item">
+        <div class="provider-head">
+          <p class="provider-label">Provider</p>
+          <button type="button" class="remove-provider">Remove</button>
+        </div>
+        <div class="row two">
+          <div>
+            <label>Name</label>
+            <input data-field="name" placeholder="runpod" />
+          </div>
+          <div>
+            <label>Endpoint</label>
+            <input data-field="endpoint" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label>API Key</label>
+            <input data-field="apiKey" type="password" placeholder="***" />
+          </div>
+          <div>
+            <label>Price / 1k</label>
+            <input data-field="price" type="number" step="0.001" value="0.02" />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label>Latency (ms)</label>
+            <input data-field="latency" type="number" value="350" />
+          </div>
+          <div>
+            <label>Availability (0-1)</label>
+            <input data-field="availability" type="number" step="0.001" min="0" max="1" value="0.99" />
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
