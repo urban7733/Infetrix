@@ -3,6 +3,7 @@ import { ProviderRequest } from "@/lib/infetrix";
 
 export type WorkloadMode = "route" | "infer";
 export type WorkloadPolicy = "cost" | "latency" | "balanced";
+export type OptimizationProfile = "baseline" | "tuned" | "aggressive";
 
 export type Workload = {
   id: string;
@@ -10,6 +11,8 @@ export type Workload = {
   model: string;
   mode: WorkloadMode;
   policy: WorkloadPolicy;
+  optimization_profile: OptimizationProfile;
+  optimization_enabled: boolean;
   max_tokens: number;
   temperature: number;
   budget_per_1k?: number;
@@ -26,6 +29,8 @@ type WorkloadRow = {
   model: string;
   mode: WorkloadMode;
   policy: WorkloadPolicy;
+  optimization_profile: OptimizationProfile;
+  optimization_enabled: boolean;
   max_tokens: number;
   temperature: number;
   budget_per_1k: number | null;
@@ -51,6 +56,8 @@ CREATE TABLE IF NOT EXISTS infetrix_workloads (
   model TEXT NOT NULL,
   mode TEXT NOT NULL CHECK (mode IN ('route', 'infer')),
   policy TEXT NOT NULL CHECK (policy IN ('cost', 'latency', 'balanced')),
+  optimization_profile TEXT NOT NULL DEFAULT 'baseline' CHECK (optimization_profile IN ('baseline', 'tuned', 'aggressive')),
+  optimization_enabled BOOLEAN NOT NULL DEFAULT true,
   max_tokens INTEGER NOT NULL,
   temperature DOUBLE PRECISION NOT NULL,
   budget_per_1k DOUBLE PRECISION,
@@ -76,6 +83,8 @@ function mapRow(row: WorkloadRow): Workload {
     model: row.model,
     mode: row.mode,
     policy: row.policy,
+    optimization_profile: row.optimization_profile ?? "baseline",
+    optimization_enabled: row.optimization_enabled ?? true,
     max_tokens: row.max_tokens,
     temperature: row.temperature,
     budget_per_1k: row.budget_per_1k ?? undefined,
@@ -151,11 +160,13 @@ export const workloadStore = {
     const result = await pool.query<WorkloadRow>(
       `
       INSERT INTO infetrix_workloads (
-        id, name, model, mode, policy, max_tokens, temperature,
-        budget_per_1k, latency_sla_ms, sample_input, providers, created_at, updated_at
+        id, name, model, mode, policy, optimization_profile, optimization_enabled,
+        max_tokens, temperature, budget_per_1k, latency_sla_ms, sample_input,
+        providers, created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11::jsonb, $12::timestamptz, $13::timestamptz
+        $8, $9, $10, $11, $12,
+        $13::jsonb, $14::timestamptz, $15::timestamptz
       )
       RETURNING *
       `,
@@ -165,6 +176,8 @@ export const workloadStore = {
         workload.model,
         workload.mode,
         workload.policy,
+        workload.optimization_profile ?? "baseline",
+        workload.optimization_enabled ?? true,
         workload.max_tokens,
         workload.temperature,
         workload.budget_per_1k ?? null,

@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 type Policy = "balanced" | "cost" | "latency";
 type Mode = "route" | "infer";
 type RunStatus = "idle" | "loading" | "success" | "error";
+type OptimizationProfile = "baseline" | "tuned" | "aggressive";
 
 type ProviderDraft = {
   id: "runpod" | "huggingface";
@@ -43,6 +44,7 @@ type WorkloadSummary = {
   model: string;
   mode: Mode;
   policy: Policy;
+  optimization_profile: OptimizationProfile;
   provider_count: number;
   budget_per_1k?: number;
   latency_sla_ms?: number;
@@ -70,6 +72,11 @@ type RunResult = {
     total_score: number;
   };
   rankings: RankingItem[];
+  optimization?: {
+    profile: OptimizationProfile;
+    projected_savings_pct: number;
+    config: Record<string, unknown>;
+  };
   provider_status?: number;
   provider_response?: unknown;
 };
@@ -130,6 +137,7 @@ export default function Home() {
   const [model, setModel] = useState("llama-3.1-8b-instruct");
   const [mode, setMode] = useState<Mode>("infer");
   const [policy, setPolicy] = useState<Policy>("balanced");
+  const [optimizationProfile, setOptimizationProfile] = useState<OptimizationProfile>("tuned");
   const [maxTokens, setMaxTokens] = useState(128);
   const [temperature, setTemperature] = useState(0.7);
   const [budgetPer1K, setBudgetPer1K] = useState(0.03);
@@ -167,6 +175,7 @@ export default function Home() {
     setModel("llama-3.1-8b-instruct");
     setMode("infer");
     setPolicy("balanced");
+    setOptimizationProfile("tuned");
     setMaxTokens(128);
     setTemperature(0.7);
     setBudgetPer1K(0.03);
@@ -202,6 +211,7 @@ export default function Home() {
       model: model.trim(),
       mode,
       policy,
+      optimization_profile: optimizationProfile,
       max_tokens: Math.max(1, Math.floor(asNum(maxTokens, 128))),
       temperature: clamp(asNum(temperature, 0.7), 0, 2),
       budget_per_1k: asNum(budgetPer1K, 0.03),
@@ -458,6 +468,33 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* Optimization Section */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Mojo Optimization
+                    </label>
+                    <div className="flex gap-2">
+                      {(["baseline", "tuned", "aggressive"] as OptimizationProfile[]).map((profile) => (
+                        <Button
+                          key={profile}
+                          type="button"
+                          variant={optimizationProfile === profile ? "default" : "outline"}
+                          onClick={() => setOptimizationProfile(profile)}
+                          className="flex-1 capitalize"
+                          size="sm"
+                        >
+                          {profile}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {optimizationProfile === "baseline" && "Standard inference. No optimization applied."}
+                      {optimizationProfile === "tuned" && "Quantization (Q4_K) + in-flight batching. ~30% cost reduction."}
+                      {optimizationProfile === "aggressive" && "Tuned + speculative decoding. ~40% cost reduction."}
+                    </p>
+                  </div>
+
                   {/* Providers Section */}
                   <div className="space-y-3">
                     <label className="text-sm font-medium">Providers</label>
@@ -646,7 +683,7 @@ export default function Home() {
                               <div>
                                 <p className="font-medium">{workload.name}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {workload.model} · {workload.mode} · {workload.policy} · {workload.provider_count}{" "}
+                                  {workload.model} · {workload.optimization_profile || "baseline"} · {workload.provider_count}{" "}
                                   providers
                                 </p>
                               </div>
@@ -747,6 +784,24 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Optimization Applied */}
+                    {runResult.optimization && (
+                      <div className="rounded-lg border border-border p-4 bg-amber-50">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          Optimization Applied
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="secondary" className="capitalize">
+                            {runResult.optimization.profile}
+                          </Badge>
+                          <span className="text-sm font-medium text-green-600">
+                            ~{runResult.optimization.projected_savings_pct}% savings
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Ranking */}
                     {runResult.rankings?.length > 0 && (

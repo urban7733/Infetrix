@@ -8,7 +8,8 @@ import {
   validateDispatchEndpoint,
   validateProviderInput,
 } from "@/lib/infetrix";
-import { Workload, WorkloadMode, workloadStore } from "@/lib/workloads-store";
+import { Workload, WorkloadMode, OptimizationProfile, workloadStore } from "@/lib/workloads-store";
+import { optimize, parseProfile, shouldOptimize } from "@/lib/optimizer";
 
 type ExecuteResult = {
   request_id: string;
@@ -17,6 +18,7 @@ type ExecuteResult = {
   model: string;
   mode: WorkloadMode;
   policy: string;
+  optimization_profile: OptimizationProfile;
   selected_provider: {
     name: string;
     endpoint: string;
@@ -32,6 +34,11 @@ type ExecuteResult = {
     price_per_1k_tokens: number;
     avg_latency_ms: number;
   }>;
+  optimization?: {
+    profile: OptimizationProfile;
+    projected_savings_pct: number;
+    config: Record<string, unknown>;
+  };
   provider_status?: number;
   provider_response?: unknown;
 };
@@ -82,6 +89,7 @@ function workloadSummary(workload: Workload) {
     model: workload.model,
     mode: workload.mode,
     policy: workload.policy,
+    optimization_profile: workload.optimization_profile,
     provider_count: workload.providers.length,
     budget_per_1k: workload.budget_per_1k,
     latency_sla_ms: workload.latency_sla_ms,
@@ -156,6 +164,10 @@ function buildCreatePayload(raw: Record<string, unknown>): Workload {
 
   const mode: WorkloadMode = modeRaw === "route" ? "route" : "infer";
   const policy = parsePolicy(typeof raw.policy === "string" ? raw.policy : undefined, "balanced");
+  const optimization_profile = parseProfile(
+    typeof raw.optimization_profile === "string" ? raw.optimization_profile : undefined
+  );
+  const optimization_enabled = raw.optimization_enabled !== false;
 
   const providers = (Array.isArray(raw.providers) ? raw.providers : []) as ProviderRequest[];
   validateProviderInput(providers, mode === "infer");
@@ -171,6 +183,8 @@ function buildCreatePayload(raw: Record<string, unknown>): Workload {
     model,
     mode,
     policy,
+    optimization_profile,
+    optimization_enabled,
     max_tokens: pickMaxTokens(raw.max_tokens),
     temperature: pickTemperature(raw.temperature),
     budget_per_1k: raw.budget_per_1k == null ? undefined : asFinite(raw.budget_per_1k, 0),
@@ -193,6 +207,18 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
   const top = rankings[0];
   const selected = top.provider;
 
+  // Apply Mojo optimization if enabled
+  const applyOptimization = shouldOptimize(workload.optimization_profile, workload.optimization_enabled);
+  const optimizationResult = applyOptimization
+    ? optimize({
+        profile: workload.optimization_profile,
+        model: workload.model,
+        prompt: String(raw.input || workload.sample_input || ""),
+        max_tokens: workload.max_tokens,
+        temperature: workload.temperature,
+      })
+    : null;
+
   const resultBase: ExecuteResult = {
     request_id: requestID(),
     workload_id: workload.id,
@@ -200,6 +226,7 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
     model: workload.model,
     mode: workload.mode,
     policy: workload.policy,
+    optimization_profile: workload.optimization_profile,
     selected_provider: {
       name: selected.name,
       endpoint: selected.endpoint,
@@ -215,6 +242,13 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
       price_per_1k_tokens: item.provider.price_per_1k_tokens,
       avg_latency_ms: item.provider.avg_latency_ms,
     })),
+    optimization: optimizationResult
+      ? {
+          profile: optimizationResult.profile,
+          projected_savings_pct: optimizationResult.projected_savings_pct,
+          config: optimizationResult.config as Record<string, unknown>,
+        }
+      : undefined,
   };
 
   if (workload.mode === "route") {
