@@ -1,98 +1,119 @@
 <p align="center">
-  <img src="docs/assets/infetrix-black-tech.svg" alt="Infetrix black-tech banner" width="100%" />
+  <img src="docs/assets/infetrix-black-tech.svg" alt="Infetrix" width="100%" />
+</p>
+
+<h1 align="center">Infetrix</h1>
+
+<p align="center">
+  <strong>Intelligent LLM Inference Router with Cost-Aware Provider Selection</strong>
 </p>
 
 <p align="center">
-  <strong>Bring Your Own Key inference routing for teams that care about cost, latency, and control.</strong>
+  <a href="https://inferix-phi.vercel.app">
+    <img alt="Live Demo" src="https://img.shields.io/badge/demo-live-22c55e?style=flat-square" />
+  </a>
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs" />
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" />
 </p>
 
 <p align="center">
-  <a href="https://inferix-phi.vercel.app"><img alt="Live Demo" src="https://img.shields.io/badge/Live-Demo-0EA5E9?style=for-the-badge" /></a>
-  <img alt="Backend" src="https://img.shields.io/badge/Backend-Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" />
-  <img alt="Frontend" src="https://img.shields.io/badge/Frontend-Next.js-111827?style=for-the-badge&logo=nextdotjs&logoColor=white" />
-  <img alt="License" src="https://img.shields.io/badge/License-MIT-16A34A?style=for-the-badge" />
+  Route AI inference requests to the optimal provider based on cost, latency, and availability constraints.
+  <br />
+  Built with production-grade architecture for real-world AI workloads.
 </p>
 
-<p align="center">
-  <a href="#why-infetrix">Why</a> ·
-  <a href="#core-features">Features</a> ·
-  <a href="#architecture">Architecture</a> ·
-  <a href="#run-local">Run Local</a> ·
-  <a href="#security-posture">Security</a> ·
-  <a href="#roadmap">Roadmap</a>
-</p>
+---
 
-## Why Infetrix
+## Overview
 
-Most teams overpay for inference because routing is static and optimization is disconnected from provider choice.
+Infetrix is a **workload-first inference routing system** that intelligently selects the best LLM provider for each request. Instead of hardcoding a single provider, define workload profiles with your constraints and let the routing engine optimize every call.
 
-Infetrix solves that with one control plane:
+**Key insight**: Most teams overpay for inference by 30-50% because they use static routing. Infetrix implements dynamic provider selection using a weighted scoring algorithm that considers:
 
-- user-owned provider credentials (BYOK)
-- policy-driven provider selection (`cost`, `latency`, `balanced`)
-- optimizer track (Mojo/MAX) to reduce GPU-seconds per request
-- transparent output showing why a provider was selected
-
-Built as an open-source personal project in Vienna with a practical goal:
-**make AI inference cheaper without making it slower.**
-
-## Core Features
-
-### Current
-
-- Go API with endpoints:
-  - `GET /health`
-  - `POST /v1/route`
-  - `POST /v1/infer`
-- weighted provider ranking by price/latency/availability
-- provider adapters:
-  - `runpod`
-  - `huggingface`
-- Next.js + TypeScript UI with a direct 3-step workflow
-- Vercel deployment for frontend
-
-### In Progress
-
-- provider expansion: Vast.ai, Modal, Lambda Labs
-- Mojo/MAX optimization stage before dispatch
-- benchmark-driven cost and latency reporting
+- **Cost efficiency** (price per 1k tokens)
+- **Latency requirements** (p50/p99 response times)
+- **Provider availability** (uptime guarantees)
+- **Policy objectives** (cost-optimized, latency-optimized, or balanced)
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    U[Client App / UI] --> A[Infetrix API]
-    A --> R[Policy Router]
-    R --> P1[RunPod]
-    R --> P2[Hugging Face]
-    R --> P3[Vast / Modal / Lambda]
-
-    U --> O[Mojo/MAX Optimizer Track]
-    O --> A
-
-    A --> S[(Routing Scores + Decision Trace)]
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              Client Request                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Infetrix Router                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │   Workload  │  │   Policy    │  │   Scoring   │  │   Provider  │    │
+│  │   Manager   │──│   Engine    │──│   System    │──│   Dispatch  │    │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+              ┌──────────────────────┼──────────────────────┐
+              ▼                      ▼                      ▼
+       ┌───────────┐          ┌───────────┐          ┌───────────┐
+       │  RunPod   │          │ Hugging   │          │   More    │
+       │           │          │   Face    │          │ Providers │
+       └───────────┘          └───────────┘          └───────────┘
 ```
 
-## Project Layout
+### Scoring Algorithm
 
-```text
-Infetrix/
-├── cmd/infetrix/            # Go entrypoint
-├── internal/
-│   ├── api/                 # HTTP handlers + validation
-│   ├── config/              # Env-driven config
-│   ├── provider/            # Provider adapters
-│   ├── router/              # Ranking engine
-│   └── security/            # Redaction helpers
-├── frontend/                # Next.js + TypeScript
-│   ├── app/v1/workloads/    # Workload-first API (create/list/execute/delete)
-│   ├── db/schema.sql         # PostgreSQL schema
-│   └── db/pgvector.sql       # Optional pgvector migration
-├── docs/                    # Architecture + optimization docs
-└── scripts/max/             # Mojo/MAX benchmark scripts
+The provider ranking uses a weighted composite score:
+
+```python
+score = (w_cost × normalize(1/price)) +
+        (w_latency × normalize(1/latency)) +
+        (w_availability × availability)
+
+# Weight distribution by policy:
+# balanced: w_cost=0.4, w_latency=0.4, w_availability=0.2
+# cost:     w_cost=0.7, w_latency=0.2, w_availability=0.1
+# latency:  w_cost=0.2, w_latency=0.7, w_availability=0.1
 ```
 
-## Run Local
+## Features
+
+### Implemented
+
+- **Workload Profiles**: Define once, execute by ID. Persist routing config, constraints, and provider credentials
+- **Multi-Provider Support**: RunPod, Hugging Face Inference API (extensible adapter pattern)
+- **Policy-Based Routing**: `balanced`, `cost`, `latency` optimization objectives
+- **Constraint Enforcement**: Budget caps, latency SLAs, token limits
+- **BYOK (Bring Your Own Keys)**: Provider credentials never leave your control
+- **Real-time Scoring**: Transparent ranking with per-request decision traces
+- **PostgreSQL Persistence**: Optional durable workload storage with pgvector support
+
+### Technical Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS |
+| Backend | Go 1.22, Chi router, structured logging |
+| Database | PostgreSQL (optional), in-memory fallback |
+| Deployment | Vercel (frontend), any container platform (backend) |
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+
+- Go 1.22+ (for backend)
+- PostgreSQL (optional)
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ### Backend
 
@@ -100,86 +121,127 @@ Infetrix/
 go run ./cmd/infetrix
 ```
 
-Optional env:
+### Environment Variables
 
 ```bash
-export INFETRIX_ADDR=":8080"
-export INFETRIX_DEFAULT_POLICY="balanced"
+# Frontend (.env.local)
+DATABASE_URL=postgresql://...  # Optional: enables persistent storage
+
+# Backend
+INFETRIX_ADDR=:8080
+INFETRIX_DEFAULT_POLICY=balanced
 ```
 
-### Frontend
+## API Reference
+
+### Create Workload
 
 ```bash
-cd frontend
-npm install
-cp .env.example .env.local
-npm run dev
+POST /v1/workloads
+Content-Type: application/json
+
+{
+  "action": "create",
+  "name": "production-router",
+  "model": "llama-3.1-8b-instruct",
+  "mode": "infer",
+  "policy": "balanced",
+  "max_tokens": 256,
+  "temperature": 0.7,
+  "budget_per_1k": 0.03,
+  "latency_sla_ms": 800,
+  "providers": [
+    {
+      "name": "runpod",
+      "endpoint": "https://api.runpod.ai/v2/{id}/runsync",
+      "api_key": "rp_xxx",
+      "price_per_1k_tokens": 0.024,
+      "avg_latency_ms": 420,
+      "availability": 0.99
+    }
+  ]
+}
 ```
 
-Open `http://localhost:3000`.
-
-Workload persistence:
-- Set `DATABASE_URL` in `frontend/.env.local` to enable PostgreSQL storage.
-- Without `DATABASE_URL`, workloads fall back to in-memory storage.
-- Optional pgvector setup: run `frontend/db/pgvector.sql` after `frontend/db/schema.sql`.
-
-## Example Request
+### Execute Workload
 
 ```bash
-curl -s http://localhost:8080/v1/route \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "Summarize this text.",
-    "model": "llama-3.1-8b-instruct",
-    "policy": "balanced",
-    "providers": [
-      {
-        "name": "runpod",
-        "endpoint": "https://api.runpod.ai/v2/YOUR_ENDPOINT/runsync",
-        "api_key": "rp_demo_key_123",
-        "price_per_1k_tokens": 0.024,
-        "avg_latency_ms": 420,
-        "availability": 0.99
-      },
-      {
-        "name": "huggingface",
-        "endpoint": "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct",
-        "api_key": "hf_demo_key_456",
-        "price_per_1k_tokens": 0.030,
-        "avg_latency_ms": 380,
-        "availability": 0.98
-      }
-    ]
-  }' | jq
+POST /v1/workloads
+Content-Type: application/json
+
+{
+  "action": "execute",
+  "workload_id": "wkld_abc123",
+  "input": "Summarize the key points..."
+}
 ```
 
-## Security Posture
+### Response
 
-- no hardcoded real provider keys in source
-- `.env*` and local secret files are gitignored
-- key exposure is reduced to preview format (`abc...12`)
-- infer dispatch validates provider endpoint host and protocol
-- API body size limits and HTTP server timeouts are enabled
-
-For production hardening, next items are auth, rate limits, and audited key storage.
-
-## Mojo/MAX Path
-
-Playbook: `docs/optimization/mojo-max-playbook.md`
-
-```bash
-./scripts/max/run_baseline.sh <model_path> artifacts/baseline.json
-./scripts/max/run_tuned.sh <tuned_model_path> artifacts/tuned.json
-./scripts/max/compare.py artifacts/baseline.json artifacts/tuned.json
+```json
+{
+  "request_id": "req_xyz789",
+  "workload_id": "wkld_abc123",
+  "selected_provider": {
+    "name": "runpod",
+    "total_score": 0.847
+  },
+  "rankings": [
+    { "name": "runpod", "total_score": 0.847, "cost_score": 0.92, "latency_score": 0.78 },
+    { "name": "huggingface", "total_score": 0.812, "cost_score": 0.85, "latency_score": 0.81 }
+  ],
+  "provider_response": { ... }
+}
 ```
+
+## Project Structure
+
+```
+infetrix/
+├── cmd/infetrix/           # Go application entrypoint
+├── internal/
+│   ├── api/                # HTTP handlers, request validation
+│   ├── config/             # Environment-driven configuration
+│   ├── provider/           # Provider adapters (RunPod, HuggingFace)
+│   ├── router/             # Scoring engine, policy implementation
+│   └── security/           # Key redaction, input sanitization
+├── frontend/
+│   ├── app/                # Next.js App Router
+│   │   ├── v1/workloads/   # Workload management API routes
+│   │   └── page.tsx        # Dashboard UI
+│   ├── components/ui/      # Reusable component library
+│   ├── lib/                # Core logic (infetrix.ts, workloads-store.ts)
+│   └── db/                 # PostgreSQL schema + pgvector migration
+├── docs/                   # Architecture documentation
+└── scripts/                # Deployment and benchmark scripts
+```
+
+## Security
+
+- **No hardcoded credentials**: All provider keys are user-supplied at runtime
+- **Key redaction**: API responses mask sensitive data (`sk-...abc`)
+- **Input validation**: Request body limits, endpoint URL validation
+- **Environment isolation**: `.env*` files excluded from version control
 
 ## Roadmap
 
-1. Add remaining provider adapters (Vast, Modal, Lambda).
-2. Integrate Mojo-based optimization before dispatch.
-3. Publish reproducible benchmark matrix (cost, TTFT, throughput).
-4. Add authenticated multi-project API mode.
+- [ ] Additional providers: Vast.ai, Modal, Lambda Labs, Together AI
+- [ ] Mojo/MAX optimization layer for pre-dispatch model optimization
+- [ ] Request caching with semantic similarity matching
+- [ ] Cost analytics dashboard with historical trends
+- [ ] Multi-tenant API with project-level isolation
+- [ ] Automated provider health monitoring
+
+## Contributing
+
+Contributions welcome. Please open an issue first to discuss proposed changes.
 
 ## License
 
-Licensed under the MIT License. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Built by <a href="https://github.com/urbanherak">@urbanherak</a>
+</p>
