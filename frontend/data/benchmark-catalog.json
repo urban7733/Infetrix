@@ -1,0 +1,62 @@
+{
+  "version": "2026-03-20",
+  "source": "infetrix-reference-benchmark-catalog",
+  "runs": [
+    {
+      "id": "mi300x_mojo",
+      "lane": "Mojo Fast Path",
+      "hardware": "AMD MI300X",
+      "runtime": "ROCm vLLM + Mojo/MAX custom kernels",
+      "scenario": "general-open-weight",
+      "model_family": "llama-3.1-8b-instruct",
+      "mojo_path": "Mojo GPU kernels and MAX custom ops on the hottest prefill and scheduling path.",
+      "ttft_ms": 265,
+      "decode_tokens_per_second": 225,
+      "blended_cost_per_1k": 0.044,
+      "quality_score": 97,
+      "lock_in_score": 94
+    },
+    {
+      "id": "inf2_decode",
+      "lane": "Neuron Decode Lane",
+      "hardware": "AWS Inferentia2",
+      "runtime": "Neuron serving + continuous batching",
+      "scenario": "general-open-weight",
+      "model_family": "llama-3.1-8b-instruct",
+      "mojo_path": "Mojo stays in the router, scheduler, and compiler-assisted control path.",
+      "ttft_ms": 305,
+      "decode_tokens_per_second": 205,
+      "blended_cost_per_1k": 0.041,
+      "quality_score": 95,
+      "lock_in_score": 88
+    },
+    {
+      "id": "tpu_elastic",
+      "lane": "Elastic TPU Lane",
+      "hardware": "Google TPU v5e / Trillium",
+      "runtime": "Ray Serve + vLLM",
+      "scenario": "general-open-weight",
+      "model_family": "llama-3.1-8b-instruct",
+      "mojo_path": "Mojo remains in the API, planner, and CPU-side orchestration path.",
+      "ttft_ms": 325,
+      "decode_tokens_per_second": 198,
+      "blended_cost_per_1k": 0.047,
+      "quality_score": 96,
+      "lock_in_score": 90
+    },
+    {
+      "id": "nvidia_mojo",
+      "lane": "Premium CUDA Lane",
+      "hardware": "NVIDIA H100 / H200",
+      "runtime": "TensorRT-LLM + Mojo/MAX custom kernels",
+      "scenario": "general-open-weight",
+      "model_family": "llama-3.1-8b-instruct",
+      "mojo_path": "Mojo custom ops stay available for premium kernels when CUDA actually wins the benchmark.",
+      "ttft_ms": 235,
+      "decode_tokens_per_second": 245,
+      "blended_cost_per_1k": 0.068,
+      "quality_score": 98,
+      "lock_in_score": 42
+    }
+  ]
+}

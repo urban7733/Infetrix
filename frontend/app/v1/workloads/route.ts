@@ -8,8 +8,8 @@ import {
   validateDispatchEndpoint,
   validateProviderInput,
 } from "@/lib/infetrix";
-import { Workload, WorkloadMode, OptimizationProfile, workloadStore } from "@/lib/workloads-store";
-import { optimize, parseProfile, shouldOptimize } from "@/lib/optimizer";
+import { buildOptimizationPlan, OptimizationPlan, workloadProfilePreview } from "@/lib/optimizer";
+import { Workload, WorkloadMode, workloadStore } from "@/lib/workloads-store";
 
 type ExecuteResult = {
   request_id: string;
@@ -18,7 +18,7 @@ type ExecuteResult = {
   model: string;
   mode: WorkloadMode;
   policy: string;
-  optimization_profile: OptimizationProfile;
+  optimization_plan: OptimizationPlan;
   selected_provider: {
     name: string;
     endpoint: string;
@@ -34,11 +34,6 @@ type ExecuteResult = {
     price_per_1k_tokens: number;
     avg_latency_ms: number;
   }>;
-  optimization?: {
-    profile: OptimizationProfile;
-    projected_savings_pct: number;
-    config: Record<string, unknown>;
-  };
   provider_status?: number;
   provider_response?: unknown;
 };
@@ -82,15 +77,44 @@ function pickMaxTokens(value: unknown): number {
   return Math.floor(n);
 }
 
+function defaultProviders(): ProviderRequest[] {
+  return [
+    {
+      name: "runpod",
+      endpoint: "https://api.runpod.ai/v2/YOUR_ENDPOINT/runsync",
+      api_key: "",
+      price_per_1k_tokens: 0.024,
+      avg_latency_ms: 420,
+      availability: 0.992,
+    },
+    {
+      name: "huggingface",
+      endpoint: "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct",
+      api_key: "",
+      price_per_1k_tokens: 0.031,
+      avg_latency_ms: 360,
+      availability: 0.985,
+    },
+  ];
+}
+
 function workloadSummary(workload: Workload) {
+  const rankings = rankProviders(workload.policy, workload.providers);
+  const plan = buildOptimizationPlan(workload, rankings);
+
   return {
     id: workload.id,
     name: workload.name,
     model: workload.model,
     mode: workload.mode,
     policy: workload.policy,
-    optimization_profile: workload.optimization_profile,
     provider_count: workload.providers.length,
+    workload_profile_preview: workloadProfilePreview(workload.workload_profile),
+    traffic_profile: workload.traffic_profile,
+    current_cost_per_1k: workload.current_cost_per_1k,
+    projected_cost_per_1k: plan.projected_cost_per_1k,
+    estimated_savings_percent: plan.estimated_savings_percent,
+    active_levers: plan.active_levers.map((lever) => lever.title),
     budget_per_1k: workload.budget_per_1k,
     latency_sla_ms: workload.latency_sla_ms,
     created_at: workload.created_at,
@@ -110,19 +134,17 @@ async function dispatchToProvider(
   const temperature = pickTemperature(temperatureOverride ?? workload.temperature);
 
   if (name === "runpod") {
-    const runpodPayload = {
-      model: workload.model,
-      input: { prompt: input },
-      parameters: { max_tokens, temperature },
-    };
-
     const response = await fetch(provider.endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${provider.api_key}`,
       },
-      body: JSON.stringify(runpodPayload),
+      body: JSON.stringify({
+        model: workload.model,
+        input: { prompt: input },
+        parameters: { max_tokens, temperature },
+      }),
       cache: "no-store",
     });
 
@@ -130,46 +152,49 @@ async function dispatchToProvider(
   }
 
   if (name === "huggingface" || name === "hugging_face" || name === "hf") {
-    const hfPayload = {
-      inputs: input,
-      parameters: {
-        max_new_tokens: max_tokens,
-        temperature,
-      },
-    };
-
     const response = await fetch(provider.endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${provider.api_key}`,
       },
-      body: JSON.stringify(hfPayload),
+      body: JSON.stringify({
+        inputs: input,
+        parameters: {
+          max_new_tokens: max_tokens,
+          temperature,
+        },
+      }),
       cache: "no-store",
     });
 
     return { status: response.status, body: parseJSONMaybe(await response.text()) };
   }
 
-  throw new Error(`no adapter for provider \"${provider.name}\"`);
+  throw new Error(`no adapter for provider "${provider.name}"`);
 }
 
 function buildCreatePayload(raw: Record<string, unknown>): Workload {
   const name = String(raw.name || "").trim();
   const model = String(raw.model || "").trim();
-  const modeRaw = String(raw.mode || "infer").trim().toLowerCase();
+  const modeRaw = String(raw.mode || "route").trim().toLowerCase();
 
   if (!name) throw new Error("workload name is required");
   if (!model) throw new Error("model is required");
 
   const mode: WorkloadMode = modeRaw === "route" ? "route" : "infer";
   const policy = parsePolicy(typeof raw.policy === "string" ? raw.policy : undefined, "balanced");
-  const optimization_profile = parseProfile(
-    typeof raw.optimization_profile === "string" ? raw.optimization_profile : undefined
-  );
-  const optimization_enabled = raw.optimization_enabled !== false;
 
-  const providers = (Array.isArray(raw.providers) ? raw.providers : []) as ProviderRequest[];
+  const providers = ((Array.isArray(raw.providers) ? raw.providers : defaultProviders()) as ProviderRequest[]).map((provider) => ({
+    ...provider,
+    name: String(provider.name || "").trim().toLowerCase(),
+    endpoint: String(provider.endpoint || "").trim(),
+    api_key: String(provider.api_key || "").trim(),
+    price_per_1k_tokens: asFinite(provider.price_per_1k_tokens, 0.03),
+    avg_latency_ms: pickMaxTokens(provider.avg_latency_ms),
+    availability: Math.max(0, Math.min(asFinite(provider.availability, 0.99), 1)),
+  }));
+
   validateProviderInput(providers, mode === "infer");
   for (const provider of providers) {
     validateDispatchEndpoint(provider.name, provider.endpoint);
@@ -183,12 +208,13 @@ function buildCreatePayload(raw: Record<string, unknown>): Workload {
     model,
     mode,
     policy,
-    optimization_profile,
-    optimization_enabled,
     max_tokens: pickMaxTokens(raw.max_tokens),
     temperature: pickTemperature(raw.temperature),
     budget_per_1k: raw.budget_per_1k == null ? undefined : asFinite(raw.budget_per_1k, 0),
+    current_cost_per_1k: raw.current_cost_per_1k == null ? undefined : asFinite(raw.current_cost_per_1k, 0.09),
     latency_sla_ms: raw.latency_sla_ms == null ? undefined : pickMaxTokens(raw.latency_sla_ms),
+    workload_profile: typeof raw.workload_profile === "string" ? raw.workload_profile.trim() : "",
+    traffic_profile: typeof raw.traffic_profile === "string" ? raw.traffic_profile.trim() : "",
     sample_input: typeof raw.sample_input === "string" ? raw.sample_input : "",
     providers,
     created_at,
@@ -206,18 +232,7 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
   const rankings = rankProviders(workload.policy, workload.providers);
   const top = rankings[0];
   const selected = top.provider;
-
-  // Apply Mojo optimization if enabled
-  const applyOptimization = shouldOptimize(workload.optimization_profile, workload.optimization_enabled);
-  const optimizationResult = applyOptimization
-    ? optimize({
-        profile: workload.optimization_profile,
-        model: workload.model,
-        prompt: String(raw.input || workload.sample_input || ""),
-        max_tokens: workload.max_tokens,
-        temperature: workload.temperature,
-      })
-    : null;
+  const optimizationPlan = buildOptimizationPlan(workload, rankings);
 
   const resultBase: ExecuteResult = {
     request_id: requestID(),
@@ -226,7 +241,7 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
     model: workload.model,
     mode: workload.mode,
     policy: workload.policy,
-    optimization_profile: workload.optimization_profile,
+    optimization_plan: optimizationPlan,
     selected_provider: {
       name: selected.name,
       endpoint: selected.endpoint,
@@ -242,13 +257,6 @@ async function executeWorkload(raw: Record<string, unknown>): Promise<ExecuteRes
       price_per_1k_tokens: item.provider.price_per_1k_tokens,
       avg_latency_ms: item.provider.avg_latency_ms,
     })),
-    optimization: optimizationResult
-      ? {
-          profile: optimizationResult.profile,
-          projected_savings_pct: optimizationResult.projected_savings_pct,
-          config: optimizationResult.config as Record<string, unknown>,
-        }
-      : undefined,
   };
 
   if (workload.mode === "route") {
