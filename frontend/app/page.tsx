@@ -2,17 +2,14 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight,
-  Check,
-  ChevronDown,
+  Braces,
   Cpu,
-  DollarSign,
   Gauge,
   Loader2,
-  Play,
-  Plus,
+  Rocket,
   Server,
-  Trash2,
+  ShieldCheck,
+  Terminal,
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,852 +17,332 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MaxDeploymentPlan, OptimizationProfile } from "@/lib/optimizer";
 
-type Policy = "balanced" | "cost" | "latency";
-type Mode = "route" | "infer";
-type RunStatus = "idle" | "loading" | "success" | "error";
-type OptimizationProfile = "baseline" | "tuned" | "aggressive";
-
-type ProviderDraft = {
-  id: "runpod" | "huggingface";
-  label: string;
-  name: string;
-  endpoint: string;
-  apiKey: string;
-  enabled: boolean;
-  price: number;
-  latency: number;
-  availability: number;
-};
-
-type WorkloadSummary = {
-  id: string;
-  name: string;
-  model: string;
-  mode: Mode;
-  policy: Policy;
-  optimization_profile: OptimizationProfile;
-  provider_count: number;
-  budget_per_1k?: number;
-  latency_sla_ms?: number;
-  created_at: string;
-  updated_at: string;
-};
-
-type RankingItem = {
-  name: string;
-  total_score: number;
-  cost_score: number;
-  latency_score: number;
-  availability_score: number;
-};
-
-type RunResult = {
-  request_id: string;
-  workload_id: string;
-  workload_name: string;
-  mode: Mode;
-  selected_provider: {
-    name: string;
-    endpoint: string;
-    api_key_preview: string;
-    total_score: number;
-  };
-  rankings: RankingItem[];
-  optimization?: {
-    profile: OptimizationProfile;
-    projected_savings_pct: number;
-    config: Record<string, unknown>;
-  };
-  provider_status?: number;
-  provider_response?: unknown;
-};
-
-const draftProviders: ProviderDraft[] = [
-  {
-    id: "runpod",
-    label: "RunPod",
-    name: "runpod",
-    endpoint: "https://api.runpod.ai/v2/YOUR_ENDPOINT/runsync",
-    apiKey: "",
-    enabled: true,
-    price: 0.024,
-    latency: 420,
-    availability: 0.99,
-  },
-  {
-    id: "huggingface",
-    label: "Hugging Face",
-    name: "huggingface",
-    endpoint: "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct",
-    apiKey: "",
-    enabled: true,
-    price: 0.03,
-    latency: 380,
-    availability: 0.98,
-  },
-];
-
-function cloneProviders(): ProviderDraft[] {
-  return draftProviders.map((provider) => ({ ...provider }));
-}
-
-function asNum(value: number, fallback: number): number {
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
+type RunStatus = "idle" | "loading" | "error";
 
 function statusLabel(status: RunStatus): string {
-  if (status === "loading") return "Running";
-  if (status === "success") return "Success";
+  if (status === "loading") return "Generating";
   if (status === "error") return "Error";
   return "Ready";
 }
 
-function statusVariant(status: RunStatus): "default" | "secondary" | "success" | "destructive" {
+function statusVariant(status: RunStatus): "default" | "secondary" | "destructive" {
   if (status === "loading") return "secondary";
-  if (status === "success") return "success";
   if (status === "error") return "destructive";
-  return "outline" as "secondary";
+  return "default";
+}
+
+function profileSummary(profile: OptimizationProfile): string {
+  if (profile === "baseline") return "Baseline MAX serve config.";
+  if (profile === "aggressive") return "Highest savings target, keep speculative paths gated.";
+  return "Best default for production rollouts.";
+}
+
+function codeClassName() {
+  return "overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100";
 }
 
 export default function Home() {
-  const [workloadName, setWorkloadName] = useState("primary-router");
   const [model, setModel] = useState("llama-3.1-8b-instruct");
-  const [mode, setMode] = useState<Mode>("infer");
-  const [policy, setPolicy] = useState<Policy>("balanced");
-  const [optimizationProfile, setOptimizationProfile] = useState<OptimizationProfile>("tuned");
-  const [maxTokens, setMaxTokens] = useState(128);
-  const [temperature, setTemperature] = useState(0.7);
-  const [budgetPer1K, setBudgetPer1K] = useState(0.03);
-  const [latencySLA, setLatencySLA] = useState(800);
-  const [sampleInput, setSampleInput] = useState("Write one crisp line announcing a launch.");
-  const [testInput, setTestInput] = useState("Run a quick quality check response.");
-  const [providers, setProviders] = useState<ProviderDraft[]>(() => cloneProviders());
+  const [modelPath, setModelPath] = useState("/models/llama-3.1-8b-instruct-q4-k");
+  const [profile, setProfile] = useState<OptimizationProfile>("tuned");
+  const [port, setPort] = useState(8000);
+  const [plan, setPlan] = useState<MaxDeploymentPlan | null>(null);
+  const [status, setStatus] = useState<RunStatus>("idle");
+  const [error, setError] = useState("");
 
-  const [workloads, setWorkloads] = useState<WorkloadSummary[]>([]);
-  const [selectedWorkloadID, setSelectedWorkloadID] = useState("");
+  const requestExample = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          model,
+          model_path: modelPath,
+          profile,
+          port,
+        },
+        null,
+        2,
+      ),
+    [model, modelPath, profile, port],
+  );
 
-  const [runStatus, setRunStatus] = useState<RunStatus>("idle");
-  const [runError, setRunError] = useState("");
-  const [runResult, setRunResult] = useState<RunResult | null>(null);
-  const [responsePreview, setResponsePreview] = useState("");
+  async function generatePlan(event?: FormEvent<HTMLFormElement>): Promise<void> {
+    event?.preventDefault();
+    setError("");
+    setStatus("loading");
+    try {
+      const response = await fetch("/v1/deploy-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: model.trim(),
+          model_path: modelPath.trim(),
+          profile,
+          port,
+        }),
+      });
 
-  const activeProviders = useMemo(() => providers.filter((provider) => provider.enabled), [providers]);
+      const data = (await response.json()) as MaxDeploymentPlan & { error?: string };
+      if (!response.ok) {
+        setStatus("error");
+        setError(data.error || "Failed to generate deployment plan.");
+        return;
+      }
 
-  async function fetchWorkloads(): Promise<void> {
-    const response = await fetch("/v1/workloads", { cache: "no-store" });
-    const data = (await response.json()) as { workloads?: WorkloadSummary[] };
-    setWorkloads(Array.isArray(data.workloads) ? data.workloads : []);
+      setPlan(data);
+      setStatus("idle");
+    } catch (requestError) {
+      setStatus("error");
+      setError(requestError instanceof Error ? requestError.message : "Failed to generate deployment plan.");
+    }
   }
 
   useEffect(() => {
-    void fetchWorkloads();
+    void generatePlan();
   }, []);
 
-  function updateProvider(id: ProviderDraft["id"], patch: Partial<ProviderDraft>): void {
-    setProviders((prev) => prev.map((provider) => (provider.id === id ? { ...provider, ...patch } : provider)));
-  }
-
-  function resetDraft(): void {
-    setWorkloadName("primary-router");
-    setModel("llama-3.1-8b-instruct");
-    setMode("infer");
-    setPolicy("balanced");
-    setOptimizationProfile("tuned");
-    setMaxTokens(128);
-    setTemperature(0.7);
-    setBudgetPer1K(0.03);
-    setLatencySLA(800);
-    setSampleInput("Write one crisp line announcing a launch.");
-    setProviders(cloneProviders());
-  }
-
-  async function createWorkload(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    setRunError("");
-
-    if (!workloadName.trim() || !model.trim()) {
-      setRunError("Workload name and model are required.");
-      return;
-    }
-    if (activeProviders.length === 0) {
-      setRunError("Enable at least one provider.");
-      return;
-    }
-
-    if (mode === "infer") {
-      const missingKey = activeProviders.find((provider) => !provider.apiKey.trim());
-      if (missingKey) {
-        setRunError(`${missingKey.label}: API key is required in infer mode.`);
-        return;
-      }
-    }
-
-    const payload = {
-      action: "create",
-      name: workloadName.trim(),
-      model: model.trim(),
-      mode,
-      policy,
-      optimization_profile: optimizationProfile,
-      max_tokens: Math.max(1, Math.floor(asNum(maxTokens, 128))),
-      temperature: clamp(asNum(temperature, 0.7), 0, 2),
-      budget_per_1k: asNum(budgetPer1K, 0.03),
-      latency_sla_ms: Math.max(1, Math.floor(asNum(latencySLA, 800))),
-      sample_input: sampleInput.trim(),
-      providers: activeProviders.map((provider) => ({
-        name: provider.name,
-        endpoint: provider.endpoint.trim(),
-        api_key: provider.apiKey.trim(),
-        price_per_1k_tokens: asNum(provider.price, 0.02),
-        avg_latency_ms: Math.max(1, Math.floor(asNum(provider.latency, 350))),
-        availability: clamp(asNum(provider.availability, 0.99), 0, 1),
-      })),
-    };
-
-    const response = await fetch("/v1/workloads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = (await response.json()) as { error?: string; workload?: WorkloadSummary };
-    if (!response.ok) {
-      setRunError(data.error || "Failed to create workload.");
-      return;
-    }
-
-    await fetchWorkloads();
-    if (data.workload?.id) {
-      setSelectedWorkloadID(data.workload.id);
-    }
-    setRunStatus("idle");
-    setRunResult(null);
-    setResponsePreview("");
-  }
-
-  async function deleteWorkload(workloadID: string): Promise<void> {
-    const response = await fetch("/v1/workloads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", workload_id: workloadID }),
-    });
-    if (!response.ok) return;
-
-    if (selectedWorkloadID === workloadID) {
-      setSelectedWorkloadID("");
-    }
-    await fetchWorkloads();
-  }
-
-  async function runSelectedWorkload(): Promise<void> {
-    setRunError("");
-    if (!selectedWorkloadID) {
-      setRunStatus("error");
-      setRunError("Select a workload first.");
-      return;
-    }
-
-    setRunStatus("loading");
-
-    const response = await fetch("/v1/workloads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "execute",
-        workload_id: selectedWorkloadID,
-        input: testInput.trim(),
-      }),
-    });
-
-    const data = (await response.json()) as RunResult & { error?: string };
-    if (!response.ok) {
-      setRunStatus("error");
-      setRunError(data.error || "Workload execution failed.");
-      return;
-    }
-
-    setRunStatus("success");
-    setRunResult(data);
-    setResponsePreview(JSON.stringify(data.provider_response ?? { note: "No provider response payload." }, null, 2));
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Navigation */}
-      <header className="border-b border-border bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                  <Zap className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-xl font-semibold">Infetrix</span>
-              </div>
-              <nav className="hidden md:flex items-center gap-6">
-                <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Dashboard
-                </a>
-                <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Docs
-                </a>
-                <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </a>
-              </nav>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
+      <header className="sticky top-0 z-50 border-b border-border bg-white/85 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white">
+              <Zap className="h-4 w-4" />
             </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="outline" className="hidden sm:flex">
-                Beta
-              </Badge>
-              <Button variant="ghost" size="sm">
-                Sign in
-              </Button>
-              <Button size="sm">
-                Get Started
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <div>
+              <p className="text-base font-semibold">Infetrix</p>
+              <p className="text-xs text-muted-foreground">API-first MAX inference optimization</p>
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline">Beta</Badge>
+            <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="border-b border-border bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Badge variant="secondary">BYOK Router</Badge>
-              <Badge variant="outline">Workload-first</Badge>
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section className="grid gap-8 border-b border-border pb-12 lg:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">Mojo / MAX</Badge>
+              <Badge variant="outline">No provider keys in the request path</Badge>
+              <Badge variant="outline">API-first</Badge>
             </div>
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
-              Intelligent model routing.
+            <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Deploy optimized model serving once.
               <br />
-              <span className="text-muted-foreground">Cut inference costs by 40%.</span>
+              <span className="text-muted-foreground">Keep the product surface small.</span>
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-              Create workload profiles once, execute by ID. Infetrix automatically routes to the fastest, cheapest provider based on your constraints.
+            <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
+              Infetrix should not ask every user to wire RunPod, Modal, and Hugging Face by hand. The easier path is
+              to deploy a tuned MAX backend, benchmark it, and use Infetrix as the control-plane API around that
+              optimized runtime.
             </p>
           </div>
 
-          {/* Stats */}
-          <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="rounded-xl border border-border bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Server className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">Workloads</span>
-              </div>
-              <p className="text-2xl font-semibold">{workloads.length}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Cpu className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">Providers</span>
+                Savings target
               </div>
-              <p className="text-2xl font-semibold">{activeProviders.length}</p>
+              <p className="text-2xl font-semibold">30-40%</p>
+              <p className="mt-1 text-sm text-muted-foreground">From quantization, batching, and cache-aware serving.</p>
             </div>
-            <div className="rounded-xl border border-border bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <DollarSign className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">Avg Savings</span>
+            <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <ShieldCheck className="h-4 w-4" />
+                Key model
               </div>
-              <p className="text-2xl font-semibold">~40%</p>
+              <p className="text-2xl font-semibold">Self-hosted</p>
+              <p className="mt-1 text-sm text-muted-foreground">No provider API keys need to ride with every request.</p>
             </div>
-            <div className="rounded-xl border border-border bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Gauge className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">Status</span>
+            <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Rocket className="h-4 w-4" />
+                Product focus
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={statusVariant(runStatus)}>{statusLabel(runStatus)}</Badge>
-              </div>
+              <p className="text-2xl font-semibold">Control plane</p>
+              <p className="mt-1 text-sm text-muted-foreground">Generate the serving plan and keep the public API simple.</p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          {/* Left Column - Forms */}
-          <div className="space-y-6">
-            {/* Create Workload Card */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Create Workload</CardTitle>
-                    <CardDescription>Define routing rules, provider credentials, and execution defaults.</CardDescription>
-                  </div>
+        <section className="mt-10 grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <Card className="border-border/80 shadow-sm">
+            <CardHeader>
+              <CardTitle>Generate MAX Deployment Plan</CardTitle>
+              <CardDescription>Only the inputs you actually need: model, path, profile, and port.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-6" onSubmit={generatePlan}>
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Model</label>
+                  <Input value={model} onChange={(event) => setModel(event.target.value)} placeholder="llama-3.1-8b-instruct" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-6" onSubmit={createWorkload}>
-                  {/* Identity Section */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium">Identity</label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <Input
-                          value={workloadName}
-                          onChange={(event) => setWorkloadName(event.target.value)}
-                          placeholder="Workload name"
-                        />
-                      </div>
-                      <div>
-                        <Input
-                          value={model}
-                          onChange={(event) => setModel(event.target.value)}
-                          placeholder="Model (e.g., llama-3.1-8b)"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Strategy Section */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium">Routing Strategy</label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={mode === "infer" ? "default" : "outline"}
-                          onClick={() => setMode("infer")}
-                          className="flex-1"
-                        >
-                          <Cpu className="h-4 w-4" />
-                          Infer
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={mode === "route" ? "default" : "outline"}
-                          onClick={() => setMode("route")}
-                          className="flex-1"
-                        >
-                          <Gauge className="h-4 w-4" />
-                          Route
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        {(["balanced", "cost", "latency"] as Policy[]).map((p) => (
-                          <Button
-                            key={p}
-                            type="button"
-                            variant={policy === p ? "default" : "outline"}
-                            onClick={() => setPolicy(p)}
-                            className="flex-1 capitalize"
-                            size="sm"
-                          >
-                            {p}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Optimization Section */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Mojo Optimization
-                    </label>
-                    <div className="flex gap-2">
-                      {(["baseline", "tuned", "aggressive"] as OptimizationProfile[]).map((profile) => (
-                        <Button
-                          key={profile}
-                          type="button"
-                          variant={optimizationProfile === profile ? "default" : "outline"}
-                          onClick={() => setOptimizationProfile(profile)}
-                          className="flex-1 capitalize"
-                          size="sm"
-                        >
-                          {profile}
-                        </Button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {optimizationProfile === "baseline" && "Standard inference. No optimization applied."}
-                      {optimizationProfile === "tuned" && "Quantization (Q4_K) + in-flight batching. ~30% cost reduction."}
-                      {optimizationProfile === "aggressive" && "Tuned + speculative decoding. ~40% cost reduction."}
-                    </p>
-                  </div>
-
-                  {/* Providers Section */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium">Providers</label>
-                    <div className="space-y-3">
-                      {providers.map((provider) => (
-                        <div
-                          key={provider.id}
-                          className={`rounded-lg border p-4 transition-colors ${
-                            provider.enabled ? "border-primary/20 bg-primary/5" : "border-border bg-muted/30"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                                  provider.enabled ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                <Server className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="font-medium">{provider.label}</p>
-                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                  {provider.endpoint}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              variant={provider.enabled ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateProvider(provider.id, { enabled: !provider.enabled })}
-                            >
-                              {provider.enabled ? (
-                                <>
-                                  <Check className="h-4 w-4" />
-                                  Enabled
-                                </>
-                              ) : (
-                                "Enable"
-                              )}
-                            </Button>
-                          </div>
-
-                          {provider.enabled && (
-                            <div className="mt-4 space-y-3">
-                              <Input
-                                type="password"
-                                placeholder={`${provider.label} API key`}
-                                value={provider.apiKey}
-                                onChange={(event) => updateProvider(provider.id, { apiKey: event.target.value })}
-                              />
-                              <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Price/1k</label>
-                                  <Input
-                                    type="number"
-                                    step="0.001"
-                                    value={provider.price}
-                                    onChange={(event) => updateProvider(provider.id, { price: Number(event.target.value) })}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Latency (ms)</label>
-                                  <Input
-                                    type="number"
-                                    value={provider.latency}
-                                    onChange={(event) => updateProvider(provider.id, { latency: Number(event.target.value) })}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground">Availability</label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="1"
-                                    step="0.01"
-                                    value={provider.availability}
-                                    onChange={(event) => updateProvider(provider.id, { availability: Number(event.target.value) })}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Constraints Section */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium">Constraints</label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Max tokens</label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={maxTokens}
-                          onChange={(event) => setMaxTokens(Number(event.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Temperature</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={temperature}
-                          onChange={(event) => setTemperature(Number(event.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Budget cap ($/1k)</label>
-                        <Input
-                          type="number"
-                          step="0.001"
-                          value={budgetPer1K}
-                          onChange={(event) => setBudgetPer1K(Number(event.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Latency SLA (ms)</label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={latencySLA}
-                          onChange={(event) => setLatencySLA(Number(event.target.value))}
-                        />
-                      </div>
-                    </div>
-                    <Textarea
-                      value={sampleInput}
-                      onChange={(event) => setSampleInput(event.target.value)}
-                      placeholder="Default input for workload execution"
-                      className="mt-2"
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-2">
-                    <Button type="submit" size="lg">
-                      <Plus className="h-4 w-4" />
-                      Save Workload
-                    </Button>
-                    <Button type="button" variant="outline" size="lg" onClick={resetDraft}>
-                      Reset
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Saved Workloads */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Saved Workloads</CardTitle>
-                <CardDescription>Select a workload to execute or manage.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {workloads.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Server className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                    <p>No workloads yet. Create one above.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {workloads.map((workload) => {
-                      const selected = workload.id === selectedWorkloadID;
-                      return (
-                        <div
-                          key={workload.id}
-                          className={`rounded-lg border p-4 cursor-pointer transition-all ${
-                            selected
-                              ? "border-primary bg-primary/5 ring-1 ring-primary"
-                              : "border-border hover:border-primary/40 hover:bg-muted/30"
-                          }`}
-                          onClick={() => setSelectedWorkloadID(workload.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`h-2 w-2 rounded-full ${selected ? "bg-primary" : "bg-muted-foreground/30"}`}
-                              />
-                              <div>
-                                <p className="font-medium">{workload.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {workload.model} · {workload.optimization_profile || "baseline"} · {workload.provider_count}{" "}
-                                  providers
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void deleteWorkload(workload.id);
-                              }}
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <p className="mt-2 text-xs text-muted-foreground font-mono">{workload.id}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Execute Panel */}
-          <div className="lg:sticky lg:top-24 h-fit">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Execute</CardTitle>
-                    <CardDescription>Run the selected workload.</CardDescription>
-                  </div>
-                  <Badge variant={statusVariant(runStatus)}>{statusLabel(runStatus)}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Selected Workload */}
-                <div className="rounded-lg border border-border bg-muted/30 p-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    Selected Workload
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Model Path</label>
+                  <Input
+                    value={modelPath}
+                    onChange={(event) => setModelPath(event.target.value)}
+                    placeholder="/models/llama-3.1-8b-instruct-q4-k"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the quantized or tuned artifact you serve with MAX.
                   </p>
-                  <p className="font-mono text-sm truncate">{selectedWorkloadID || "None selected"}</p>
                 </div>
 
-                {/* Test Input */}
-                <Textarea
-                  value={testInput}
-                  onChange={(event) => setTestInput(event.target.value)}
-                  placeholder="Enter test input..."
-                  className="min-h-[80px]"
-                />
-
-                {/* Run Button */}
-                <Button
-                  size="lg"
-                  className="w-full"
-                  onClick={() => void runSelectedWorkload()}
-                  disabled={runStatus === "loading" || !selectedWorkloadID}
-                >
-                  {runStatus === "loading" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  Run Workload
-                </Button>
-
-                {/* Error Display */}
-                {runError && (
-                  <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-                    {runError}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Optimization Profile</label>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {(["baseline", "tuned", "aggressive"] as OptimizationProfile[]).map((value) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={profile === value ? "default" : "outline"}
+                        onClick={() => setProfile(value)}
+                        className="capitalize"
+                      >
+                        {value}
+                      </Button>
+                    ))}
                   </div>
-                )}
+                  <p className="text-xs text-muted-foreground">{profileSummary(profile)}</p>
+                </div>
 
-                {/* Results */}
-                {runResult && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Serve Port</label>
+                  <Input type="number" min="1" value={port} onChange={(event) => setPort(Number(event.target.value))} />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Control Plane API Request</label>
+                  <Textarea readOnly value={requestExample} className="min-h-[144px] font-mono text-xs" />
+                </div>
+
+                {error ? <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
+
+                <Button type="submit" size="lg" className="w-full" disabled={status === "loading"}>
+                  {status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Terminal className="h-4 w-4" />}
+                  Generate Plan
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            <Card className="border-border/80 shadow-sm">
+              <CardHeader>
+                <CardTitle>Plan Output</CardTitle>
+                <CardDescription>Serve, warm-cache, benchmark, compare. Nothing extra.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {plan ? (
                   <>
-                    <div className="h-px bg-border" />
-
-                    {/* Selected Provider */}
-                    <div className="rounded-lg border border-border p-4">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Selected Provider
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700">
-                          <Check className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{runResult.selected_provider.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Score: {runResult.selected_provider.total_score.toFixed(4)}
-                          </p>
-                        </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-border bg-slate-50 p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Projected Savings</p>
+                        <p className="mt-2 text-2xl font-semibold">{plan.projected_savings_pct}%</p>
+                      </div>
+                      <div className="rounded-2xl border border-border bg-slate-50 p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Latency Delta</p>
+                        <p className="mt-2 text-2xl font-semibold">-{plan.projected_latency_reduction_pct}%</p>
+                      </div>
+                      <div className="rounded-2xl border border-border bg-slate-50 p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Memory Utilization</p>
+                        <p className="mt-2 text-2xl font-semibold">{plan.config.device_memory_utilization}</p>
                       </div>
                     </div>
 
-                    {/* Optimization Applied */}
-                    {runResult.optimization && (
-                      <div className="rounded-lg border border-border p-4 bg-amber-50">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
-                          <Zap className="h-3 w-3" />
-                          Optimization Applied
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary" className="capitalize">
-                            {runResult.optimization.profile}
-                          </Badge>
-                          <span className="text-sm font-medium text-green-600">
-                            ~{runResult.optimization.projected_savings_pct}% savings
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <div>
+                      <p className="mb-2 text-sm font-medium">Environment</p>
+                      <pre className={codeClassName()}>{`export MODEL_ID="${plan.env.MODEL_ID}"
+export MODEL_PATH="${plan.env.MODEL_PATH}"
+export PORT="${plan.env.PORT}"`}</pre>
+                    </div>
 
-                    {/* Ranking */}
-                    {runResult.rankings?.length > 0 && (
-                      <div className="rounded-lg border border-border p-4">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                          Provider Ranking
-                        </p>
-                        <div className="space-y-3">
-                          {runResult.rankings.map((item, index) => {
-                            const width = clamp(Math.round(item.total_score * 100), 0, 100);
-                            return (
-                              <div key={item.name}>
-                                <div className="flex items-center justify-between text-sm mb-1">
-                                  <span className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">{index + 1}.</span>
-                                    <span className="font-medium">{item.name}</span>
-                                  </span>
-                                  <span className="text-muted-foreground">{item.total_score.toFixed(3)}</span>
-                                </div>
-                                <div className="h-2 rounded-full bg-muted">
-                                  <div
-                                    className="h-full rounded-full bg-primary transition-all"
-                                    style={{ width: `${width}%` }}
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                    <div>
+                      <p className="mb-2 text-sm font-medium">Serve Command</p>
+                      <pre className={codeClassName()}>{plan.commands.serve}</pre>
+                    </div>
 
-                    {/* Response Preview */}
-                    <div className="rounded-lg border border-border p-4">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Response
-                      </p>
-                      <pre className="max-h-[200px] overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 font-mono">
-                        {responsePreview || "No response data"}
-                      </pre>
+                    <div className="grid gap-4">
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Warm Cache</p>
+                        <pre className={codeClassName()}>{plan.commands.warm_cache}</pre>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Baseline Benchmark</p>
+                        <pre className={codeClassName()}>{plan.commands.baseline_benchmark}</pre>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Optimized Benchmark</p>
+                        <pre className={codeClassName()}>{plan.commands.optimized_benchmark}</pre>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Compare Results</p>
+                        <pre className={codeClassName()}>{plan.commands.compare}</pre>
+                      </div>
                     </div>
                   </>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-slate-50 p-8 text-sm text-muted-foreground">
+                    Generate a plan to see the MAX runtime commands.
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-white mt-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
-                <Zap className="h-3 w-3 text-white" />
-              </div>
-              <span className="font-medium">Infetrix</span>
-              <span className="text-muted-foreground text-sm">· Intelligent Model Routing</span>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card className="border-border/80 shadow-sm">
+                <CardHeader>
+                  <CardTitle>Why This Is Simpler</CardTitle>
+                  <CardDescription>Remove the product surface area you do not need.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-3">
+                    <Server className="mt-0.5 h-4 w-4 text-primary" />
+                    <p>One optimized serving stack is easier to operate than asking users to compare providers manually.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Gauge className="mt-0.5 h-4 w-4 text-primary" />
+                    <p>Benchmarks decide whether a profile ships. The UI should not ask users to guess prices and latency.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Braces className="mt-0.5 h-4 w-4 text-primary" />
+                    <p>Infrastructure credentials are only needed when you create the GPU deployment, not on every inference call.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/80 shadow-sm">
+                <CardHeader>
+                  <CardTitle>Control Plane API</CardTitle>
+                  <CardDescription>Generate deployment plans programmatically from your own tooling.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <pre className={codeClassName()}>{`curl -X POST http://localhost:3000/v1/deploy-plan \\
+  -H "Content-Type: application/json" \\
+  -d '${requestExample}'`}</pre>
+
+                  {plan ? (
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      {plan.notes.map((note) => (
+                        <div key={note} className="rounded-xl border border-border bg-slate-50 px-3 py-2">
+                          {note}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
             </div>
-            <p className="text-sm text-muted-foreground">Built for developers who want faster, cheaper AI inference.</p>
           </div>
-        </div>
-      </footer>
+        </section>
+      </main>
     </div>
   );
 }

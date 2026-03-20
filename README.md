@@ -1,11 +1,11 @@
 # infetrix
 
-**Inference optimization layer for LLM workloads**
+**API-first optimization layer for MAX-backed LLM serving**
 
-Sits between your app and GPU providers. Reduces inference costs 30-40% through quantization, batching, and caching before dispatch.
+Generate a MAX deployment plan, benchmark it, and keep the public inference surface small. The current product direction is to optimize the serving layer first, then expose a simpler control-plane API on top.
 
 ```
-Your App  ──▶  Infetrix  ──▶  [Mojo Optimization]  ──▶  RunPod / Modal / HuggingFace
+Your App  ──▶  Infetrix Control Plane  ──▶  [MAX-Optimized Runtime]  ──▶  GPU
 ```
 
 [![Demo](https://img.shields.io/badge/demo-live-22c55e?style=flat-square)](https://frontend-three-peach-61.vercel.app)
@@ -19,9 +19,9 @@ Your App  ──▶  Infetrix  ──▶  [Mojo Optimization]  ──▶  RunPod
 
 ## Why
 
-Most teams overpay for inference because they send raw requests directly to providers. No quantization, no batching, no caching.
+Most teams overpay for inference because they deploy a raw model endpoint and stop there.
 
-Infetrix applies Mojo/MAX optimizations before dispatch:
+Infetrix is moving toward a simpler model: deploy an optimized MAX runtime and standardize the API layer around it.
 - **Quantization** (Q4_K) — smaller models, faster inference
 - **In-flight batching** — process multiple requests together
 - **Prefix caching** — reuse computation for common prefixes
@@ -77,23 +77,22 @@ Open http://localhost:3000
 **Environment:**
 ```bash
 DATABASE_URL=postgresql://...     # optional
-MOJO_OPTIMIZER_URL=http://localhost:8080
 ```
 
 ---
 
 ## API
 
-**Create workload:**
+**Generate deployment plan:**
 ```bash
-curl -X POST /v1/workloads \
-  -d '{"action":"create","name":"prod","model":"llama-3.1-8b","optimization_profile":"tuned"}'
+curl -X POST /v1/deploy-plan \
+  -H "Content-Type: application/json" \
+  -d '{"model":"llama-3.1-8b","model_path":"/models/llama-3.1-8b-q4-k","profile":"tuned"}'
 ```
 
-**Execute:**
+**Compare optimized benchmark vs baseline:**
 ```bash
-curl -X POST /v1/workloads \
-  -d '{"action":"execute","workload_id":"wkld_xxx","input":"..."}'
+python3 scripts/max/compare.py ./benchmarks/baseline.json ./benchmarks/tuned.json
 ```
 
 ---
