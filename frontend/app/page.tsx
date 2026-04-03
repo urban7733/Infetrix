@@ -388,9 +388,32 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <section className="rounded-[32px] border border-zinc-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_24px_60px_rgba(15,23,42,0.06)] sm:p-8">
+    <div className="relative min-h-screen overflow-x-hidden">
+      <div className="mesh-bg">
+        <div className="absolute inset-0 bg-glow-conic opacity-90" />
+        <div className="absolute -left-1/4 top-0 h-[520px] w-[520px] rounded-full bg-primary/20 blur-[120px] animate-drift" />
+        <div className="absolute -right-1/4 bottom-0 h-[480px] w-[480px] rounded-full bg-accent/15 blur-[100px] animate-drift [animation-delay:-7s]" />
+        <div className="absolute inset-0 grid-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background" />
+      </div>
+
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/75 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-teal-600 text-primary-foreground shadow-glow">
+              <Zap className="h-4 w-4" strokeWidth={2.25} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold tracking-tight text-foreground">Infetrix</p>
+              <p className="text-2xs text-muted-foreground">Inference control plane</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative min-h-screen animate-fade-in">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <section className="surface-glass rounded-[32px] p-6 shadow-elevated sm:p-8">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
@@ -400,51 +423,51 @@ export default function Home() {
                 <Badge variant="secondary">Benchmark-gated</Badge>
               </div>
 
-              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">
-                Open workload intake for cheaper inference, without the provider maze.
+              <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl sm:leading-tight">
+                Open workload intake for <span className="text-gradient">cheaper inference</span>, without the provider maze.
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
                 Users hand you one complete workload payload. Infetrix maps the cheaper lane mix, keeps Mojo in the
                 execution story, and treats NVIDIA as optional instead of architectural default.
               </p>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
                   <p className="section-label">Access</p>
-                  <p className="text-lg font-semibold text-zinc-950">Open dashboard</p>
+                  <p className="text-lg font-semibold text-foreground">Open dashboard</p>
                 </div>
-                <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
                   <p className="section-label">Cost target</p>
-                  <p className="text-lg font-semibold text-zinc-950">&gt;= 50%</p>
+                  <p className="text-lg font-semibold text-foreground">&gt;= 50%</p>
                 </div>
-                <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
                   <p className="section-label">Compute posture</p>
-                  <p className="text-lg font-semibold text-zinc-950">Open fabric</p>
+                  <p className="text-lg font-semibold text-foreground">Open fabric</p>
                 </div>
               </div>
             </div>
 
-            <div className="w-full shrink-0 rounded-[28px] border border-zinc-200 bg-zinc-50 p-5 lg:max-w-sm">
+            <div className="w-full shrink-0 rounded-[28px] border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm lg:max-w-sm">
               <p className="section-label">Release posture</p>
-              <p className="text-3xl font-semibold text-zinc-950">{formatPercent(displaySavings)}</p>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">{displayTargetStatus}</p>
+              <p className="text-3xl font-semibold tabular-nums text-foreground">{formatPercent(displaySavings)}</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{displayTargetStatus}</p>
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-zinc-950">Quality</p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  <p className="text-sm font-medium text-foreground">Quality</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     {dashboardPlan?.quality_posture || "Cheaper lanes only ship when answer quality stays at the current bar."}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-zinc-950">Speed</p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  <p className="text-sm font-medium text-foreground">Speed</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     {dashboardPlan?.speed_posture || "Latency remains gated so savings never come from a degraded product feel."}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-zinc-950">Lock-in</p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  <p className="text-sm font-medium text-foreground">Lock-in</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     {dashboardPlan?.lock_in_posture || "Keep the control plane portable and only use CUDA when measured results justify it."}
                   </p>
                 </div>
@@ -519,7 +542,11 @@ export default function Home() {
                         >
                           <div>
                             <p className="text-sm font-semibold">{option.label}</p>
-                            <p className={`mt-2 text-sm leading-6 ${policy === option.id ? "text-white/80" : "text-zinc-600"}`}>{option.copy}</p>
+                            <p
+                              className={`mt-2 text-sm leading-6 ${policy === option.id ? "text-primary-foreground/85" : "text-muted-foreground"}`}
+                            >
+                              {option.copy}
+                            </p>
                           </div>
                         </Button>
                       ))}
@@ -554,18 +581,16 @@ export default function Home() {
                     <Badge variant="secondary">Public dashboard, no sign-in required</Badge>
                   </div>
 
-                  <div className="rounded-[24px] border border-zinc-200 bg-zinc-50 p-4">
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="section-label">Own API payload</p>
-                        <p className="text-sm leading-6 text-zinc-600">Users hand over the whole workload once. That is the product entry.</p>
+                        <p className="text-sm leading-6 text-muted-foreground">Users hand over the whole workload once. That is the product entry.</p>
                       </div>
                       <Badge variant="outline">API-first</Badge>
                     </div>
 
-                    <pre className="mt-4 overflow-x-auto rounded-2xl border border-zinc-200 bg-white p-4 text-xs leading-6 text-zinc-700">
-                      {apiPreview}
-                    </pre>
+                    <pre className="code-panel mt-4 whitespace-pre-wrap text-xs leading-6">{apiPreview}</pre>
                   </div>
                 </form>
               </CardContent>
@@ -578,8 +603,8 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 {workloads.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-zinc-300 bg-zinc-50 p-6">
-                    <p className="text-sm leading-6 text-zinc-600">No workloads yet. Submit one payload above and the dashboard will turn on immediately.</p>
+                  <div className="rounded-[24px] border border-dashed border-white/15 bg-white/[0.02] p-6">
+                    <p className="text-sm leading-6 text-muted-foreground">No workloads yet. Submit one payload above and the dashboard will turn on immediately.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -590,33 +615,33 @@ export default function Home() {
                         <div
                           key={workload.id}
                           className={`rounded-[24px] border p-4 transition-colors ${
-                            selected ? "border-zinc-950 bg-zinc-50" : "border-zinc-200 bg-white"
+                            selected ? "border-primary/50 bg-primary/10 shadow-glow" : "border-white/10 bg-white/[0.02]"
                           }`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setSelectedWorkloadID(workload.id)}>
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate text-base font-semibold text-zinc-950">{workload.name}</p>
+                                <p className="truncate text-base font-semibold text-foreground">{workload.name}</p>
                                 <Badge variant="outline">{workload.policy}</Badge>
                                 <Badge variant="secondary">{workload.mode}</Badge>
                               </div>
-                              <p className="mt-1 text-sm text-zinc-500">{workload.model}</p>
-                              <p className="mt-3 text-sm leading-6 text-zinc-600">
+                              <p className="mt-1 text-sm text-muted-foreground">{workload.model}</p>
+                              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                                 {workload.workload_profile_preview || workload.traffic_profile || "Saved workload intake"}
                               </p>
 
                               <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                                   <p className="section-label !mb-1">Spend</p>
-                                  <p className="text-sm font-semibold text-zinc-950">{formatCost(workload.current_cost_per_1k)}</p>
+                                  <p className="text-sm font-semibold text-foreground">{formatCost(workload.current_cost_per_1k)}</p>
                                 </div>
-                                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                                   <p className="section-label !mb-1">Projected</p>
-                                  <p className="text-sm font-semibold text-zinc-950">{formatCost(workload.projected_cost_per_1k)}</p>
+                                  <p className="text-sm font-semibold text-foreground">{formatCost(workload.projected_cost_per_1k)}</p>
                                 </div>
-                                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                                   <p className="section-label !mb-1">Savings</p>
-                                  <p className="text-sm font-semibold text-zinc-950">{formatPercent(workload.estimated_savings_percent)}</p>
+                                  <p className="text-sm font-semibold text-foreground">{formatPercent(workload.estimated_savings_percent)}</p>
                                 </div>
                               </div>
                             </button>
@@ -649,17 +674,17 @@ export default function Home() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {runError ? (
-                  <div className="rounded-[24px] border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">{runError}</div>
+                  <div className="rounded-[24px] border border-destructive/30 bg-destructive/10 p-4 text-sm leading-6 text-destructive">{runError}</div>
                 ) : null}
 
-                <section className="rounded-[24px] border border-zinc-200 bg-zinc-50 p-4">
+                <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="section-label !mb-1">Current selection</p>
-                      <p className="truncate text-lg font-semibold text-zinc-950">
+                      <p className="truncate text-lg font-semibold text-foreground">
                         {runResult?.workload_name || selectedWorkload?.name || "Draft preview"}
                       </p>
-                      <p className="mt-1 text-sm text-zinc-500">{selectedWorkload?.model || model}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{selectedWorkload?.model || model}</p>
                     </div>
                     {selectedWorkloadID ? (
                       <Button type="button" variant="outline" onClick={() => void runSelectedWorkload(selectedWorkloadID)} disabled={runStatus === "loading"}>
@@ -668,137 +693,137 @@ export default function Home() {
                       </Button>
                     ) : null}
                   </div>
-                  <p className="mt-4 text-sm leading-6 text-zinc-600">
+                  <p className="mt-4 text-sm leading-6 text-muted-foreground">
                     {dashboardPlan?.summary ||
                       "Paste one workload and Infetrix will surface the cheaper lane mix, the active levers, and the guarded latency envelope."}
                   </p>
                 </section>
 
                 <section className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Current spend</p>
-                    <p className="text-xl font-semibold text-zinc-950">{formatCost(dashboardPlan?.current_cost_per_1k ?? currentCostPer1K)}</p>
+                    <p className="text-xl font-semibold text-foreground">{formatCost(dashboardPlan?.current_cost_per_1k ?? currentCostPer1K)}</p>
                   </div>
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Projected spend</p>
-                    <p className="text-xl font-semibold text-zinc-950">{formatCost(displayProjectedCost)}</p>
+                    <p className="text-xl font-semibold text-foreground">{formatCost(displayProjectedCost)}</p>
                   </div>
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Savings</p>
-                    <p className="text-xl font-semibold text-zinc-950">{formatPercent(displaySavings)}</p>
+                    <p className="text-xl font-semibold text-foreground">{formatPercent(displaySavings)}</p>
                   </div>
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Latency guardrail</p>
-                    <p className="text-xl font-semibold text-zinc-950">{formatLatency(displayLatency)}</p>
+                    <p className="text-xl font-semibold text-foreground">{formatLatency(displayLatency)}</p>
                   </div>
                 </section>
 
-                <section className="rounded-[24px] border border-zinc-200 p-4">
+                <section className="rounded-[24px] border border-white/10 p-4">
                   <div className="flex items-center gap-2">
-                    <Radar className="h-4 w-4 text-zinc-950" />
-                    <p className="text-sm font-medium text-zinc-950">Recommendation</p>
+                    <Radar className="h-4 w-4 text-foreground" />
+                    <p className="text-sm font-medium text-foreground">Recommendation</p>
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[20px] border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                       <p className="section-label !mb-1">Primary lane</p>
-                      <p className="text-sm font-semibold text-zinc-950">
+                      <p className="text-sm font-semibold text-foreground">
                         {displayRecommendation?.primary_lane || "Mojo Fast Path on AMD MI300X"}
                       </p>
                     </div>
-                    <div className="rounded-[20px] border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                       <p className="section-label !mb-1">Shadow lane</p>
-                      <p className="text-sm font-semibold text-zinc-950">
+                      <p className="text-sm font-semibold text-foreground">
                         {displayRecommendation?.shadow_lane || "Neuron Decode Lane on AWS Inferentia2"}
                       </p>
                     </div>
                   </div>
 
-                  <p className="mt-4 text-sm leading-6 text-zinc-600">
+                  <p className="mt-4 text-sm leading-6 text-muted-foreground">
                     {displayRecommendation?.rationale ||
                       "Keep a primary and a shadow lane alive so the optimizer proves the economics instead of locking into one accelerator too early."}
                   </p>
                 </section>
 
                 <section className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Quality</p>
-                    <p className="text-sm leading-6 text-zinc-600">
+                    <p className="text-sm leading-6 text-muted-foreground">
                       {dashboardPlan?.quality_posture || "Quality stays pinned while cheaper routes remain gated."}
                     </p>
                   </div>
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Speed</p>
-                    <p className="text-sm leading-6 text-zinc-600">
+                    <p className="text-sm leading-6 text-muted-foreground">
                       {dashboardPlan?.speed_posture || "Same-speed claims only ship when the hot path remains protected."}
                     </p>
                   </div>
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Lock-in</p>
-                    <p className="text-sm leading-6 text-zinc-600">
+                    <p className="text-sm leading-6 text-muted-foreground">
                       {dashboardPlan?.lock_in_posture || "Stay portable and use CUDA only when the benchmark actually wins."}
                     </p>
                   </div>
-                  <div className="rounded-[24px] border border-zinc-200 p-4">
+                  <div className="rounded-[24px] border border-white/10 p-4">
                     <p className="section-label !mb-1">Deployment</p>
-                    <p className="text-sm leading-6 text-zinc-600">
+                    <p className="text-sm leading-6 text-muted-foreground">
                       {dashboardPlan?.deployment_posture || "Hybrid capacity remains available so the stack does not collapse into one vendor."}
                     </p>
                   </div>
                 </section>
 
-                <section className="rounded-[24px] border border-zinc-200 p-4">
+                <section className="rounded-[24px] border border-white/10 p-4">
                   <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-zinc-950" />
-                    <p className="text-sm font-medium text-zinc-950">Top cost levers</p>
+                    <Zap className="h-4 w-4 text-foreground" />
+                    <p className="text-sm font-medium text-foreground">Top cost levers</p>
                   </div>
 
                   <div className="mt-4 space-y-3">
                     {displayLevers.map((lever) => (
-                      <div key={lever.title} className="rounded-[20px] border border-zinc-200 bg-zinc-50 p-4">
-                        <p className="text-sm font-semibold text-zinc-950">{lever.title}</p>
-                        <p className="mt-1 text-sm font-medium text-zinc-700">{lever.effect}</p>
-                        <p className="mt-2 text-sm leading-6 text-zinc-600">{lever.detail}</p>
+                      <div key={lever.title} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+                        <p className="text-sm font-semibold text-foreground">{lever.title}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-300">{lever.effect}</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{lever.detail}</p>
                       </div>
                     ))}
                   </div>
                 </section>
 
-                <section className="rounded-[24px] border border-zinc-200 p-4">
+                <section className="rounded-[24px] border border-white/10 p-4">
                   <div className="flex items-center gap-2">
-                    <Waypoints className="h-4 w-4 text-zinc-950" />
-                    <p className="text-sm font-medium text-zinc-950">Benchmark lanes</p>
+                    <Waypoints className="h-4 w-4 text-foreground" />
+                    <p className="text-sm font-medium text-foreground">Benchmark lanes</p>
                   </div>
 
                   <div className="mt-4 space-y-3">
                     {displayMatrix.map((lane) => (
-                      <div key={lane.id} className="rounded-[20px] border border-zinc-200 bg-zinc-50 p-4">
+                      <div key={lane.id} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-semibold text-zinc-950">{lane.lane}</p>
+                              <p className="text-sm font-semibold text-foreground">{lane.lane}</p>
                               <Badge variant={laneVariant(lane.status)}>{lane.status}</Badge>
                             </div>
-                            <p className="mt-1 text-sm text-zinc-500">{lane.hardware}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{lane.hardware}</p>
                           </div>
-                          <p className="text-sm font-semibold text-zinc-950">{formatCost(lane.blended_cost_per_1k)}</p>
+                          <p className="text-sm font-semibold text-foreground">{formatCost(lane.blended_cost_per_1k)}</p>
                         </div>
 
-                        <p className="mt-3 text-sm leading-6 text-zinc-600">{lane.runtime}</p>
-                        <p className="mt-2 text-sm leading-6 text-zinc-500">{lane.mojo_path}</p>
+                        <p className="mt-3 text-sm leading-6 text-muted-foreground">{lane.runtime}</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{lane.mojo_path}</p>
 
                         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                          <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <div className="rounded-2xl border border-white/10 bg-[#0a0f18] p-3">
                             <p className="section-label !mb-1">TTFT</p>
-                            <p className="text-sm font-semibold text-zinc-950">{formatLatency(lane.ttft_ms)}</p>
+                            <p className="text-sm font-semibold text-foreground">{formatLatency(lane.ttft_ms)}</p>
                           </div>
-                          <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <div className="rounded-2xl border border-white/10 bg-[#0a0f18] p-3">
                             <p className="section-label !mb-1">Decode</p>
-                            <p className="text-sm font-semibold text-zinc-950">{lane.decode_tokens_per_second} tok/s</p>
+                            <p className="text-sm font-semibold text-foreground">{lane.decode_tokens_per_second} tok/s</p>
                           </div>
-                          <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <div className="rounded-2xl border border-white/10 bg-[#0a0f18] p-3">
                             <p className="section-label !mb-1">Score</p>
-                            <p className="text-sm font-semibold text-zinc-950">{lane.overall_score.toFixed(0)}</p>
+                            <p className="text-sm font-semibold text-foreground">{lane.overall_score.toFixed(0)}</p>
                           </div>
                         </div>
                       </div>
@@ -809,7 +834,8 @@ export default function Home() {
             </Card>
           </div>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

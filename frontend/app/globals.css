@@ -4,20 +4,29 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 222 47% 11%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 97%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 11%;
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 40% 8%;
+    --card-foreground: 210 40% 96%;
+    --primary: 172 66% 50%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 222 35% 14%;
+    --secondary-foreground: 210 35% 92%;
+    --muted: 222 30% 16%;
+    --muted-foreground: 215 20% 58%;
+    --accent: 265 85% 62%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 28% 18%;
+    --input: 222 28% 16%;
+    --ring: 172 66% 50%;
     --radius: 1rem;
+    --success: 152 69% 45%;
+    --grid: 222 25% 24%;
+    --glow-1: 172 66% 50%;
+    --glow-2: 265 85% 62%;
+    --glow-3: 199 89% 48%;
   }
 
   * {
@@ -30,23 +39,47 @@
   }
 
   html {
-    color-scheme: light;
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    background:
-      radial-gradient(circle at top left, rgba(15, 23, 42, 0.04), transparent 26%),
-      linear-gradient(180deg, #ffffff 0%, #fcfcfc 55%, #f7f7f5 100%);
+    @apply bg-background text-foreground antialiased font-sans;
   }
 
   ::selection {
-    background: rgba(15, 23, 42, 0.12);
+    @apply bg-primary/30 text-foreground;
   }
 }
 
 @layer components {
+  .surface-glass {
+    @apply border border-white/[0.08] bg-card/70 shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl;
+  }
+
+  .mesh-bg {
+    @apply pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-background;
+  }
+
+  .code-panel {
+    @apply overflow-x-auto rounded-xl border border-white/[0.08] bg-[#070b14] p-4 font-mono text-[13px] leading-relaxed text-slate-200 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)];
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-teal-200 via-cyan-200 to-violet-300 bg-clip-text text-transparent;
+  }
+
   .section-label {
-    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500;
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+  }
+
+  .grid-overlay {
+    background-size: 48px 48px;
+    @apply bg-grid-fine opacity-[0.35];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }

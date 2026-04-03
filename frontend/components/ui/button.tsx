@@ -4,21 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-zinc-950 text-white hover:bg-zinc-800",
-        secondary: "bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
-        outline: "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
-        ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
+        default:
+          "bg-gradient-to-r from-primary to-teal-500 text-primary-foreground shadow-glow hover:opacity-[0.96]",
+        secondary: "border border-white/10 bg-white/[0.06] text-foreground hover:bg-white/[0.1]",
+        outline: "border border-white/10 bg-transparent text-foreground hover:bg-white/[0.05]",
+        ghost: "text-muted-foreground hover:bg-white/[0.06] hover:text-foreground",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 px-3 text-xs",
-        lg: "h-11 px-5",
-        icon: "h-10 w-10",
+        default: "h-9 px-4 py-2",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-11 px-6",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: {
