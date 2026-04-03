@@ -48,8 +48,8 @@ module.exports = {
         glow: "0 0 40px -10px hsl(var(--primary) / 0.45)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        sans: ["Avenir Next", "Segoe UI", "Helvetica Neue", "Arial", "sans-serif"],
+        mono: ["IBM Plex Mono", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
